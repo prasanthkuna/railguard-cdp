@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "encore run",
     "build": "encore check",
-    "lint": "encore check",
+    "lint": "biome check ../../apps/api ../../packages",
     "typecheck": "encore check"
   }
 }

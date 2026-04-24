@@ -1,13 +1,11 @@
 # Local Setup
 
-This repo is scaffolded but not fully implemented yet.
+## Prerequisites
 
-## Planned Local Services
-
-- Postgres
-- Redis
-- Next.js app
-- Encore.ts backend
+- Bun `1.3.4` or newer
+- Node.js `18+`
+- Docker running locally so Encore can provision Postgres
+- Encore CLI installed
 
 ## Environment
 
@@ -20,10 +18,26 @@ Start from `.env.example` and fill in:
 - AI extraction provider key
 - Coinbase CDP secrets
 
-## First Implementation Tasks
+## Commands
 
-1. Scaffold `apps/web`.
-2. Scaffold `apps/api`.
-3. Create the first Postgres schema and migration flow.
-4. Add local scripts for `dev`, `lint`, `typecheck`, and `test`.
+1. Install dependencies with `bun install`.
+2. Start the backend with `bun run dev:api`.
+3. Run repo checks with `bun run check`.
+4. Lint only with `bun run lint`.
+5. Run unit tests with `bun run test`.
 
+## Local auth headers
+
+The backend expects these headers for authenticated endpoints:
+
+- `Authorization: Bearer demo-token`
+- `X-Organization-Id: org_demo`
+- `X-Role: owner`
+
+## Current backend scope
+
+- vendor registry and wallet history
+- invoice intake and deterministic policy evaluation
+- approvals for escalations
+- payment-intent creation and demo execution
+- append-only audit trail retrieval
