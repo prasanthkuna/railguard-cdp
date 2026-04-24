@@ -1,0 +1,52 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "railguard",
+    },
+    "apps/api": {
+      "name": "@railguard/api",
+      "version": "0.1.0",
+    },
+    "apps/web": {
+      "name": "@railguard/web",
+      "version": "0.1.0",
+    },
+    "packages/audit": {
+      "name": "@railguard/audit",
+      "version": "0.1.0",
+    },
+    "packages/auth": {
+      "name": "@railguard/auth",
+      "version": "0.1.0",
+    },
+    "packages/cdp": {
+      "name": "@railguard/cdp",
+      "version": "0.1.0",
+    },
+    "packages/db": {
+      "name": "@railguard/db",
+      "version": "0.1.0",
+    },
+    "packages/policy": {
+      "name": "@railguard/policy",
+      "version": "0.1.0",
+    },
+  },
+  "packages": {
+    "@railguard/api": ["@railguard/api@workspace:apps/api"],
+
+    "@railguard/audit": ["@railguard/audit@workspace:packages/audit"],
+
+    "@railguard/auth": ["@railguard/auth@workspace:packages/auth"],
+
+    "@railguard/cdp": ["@railguard/cdp@workspace:packages/cdp"],
+
+    "@railguard/db": ["@railguard/db@workspace:packages/db"],
+
+    "@railguard/policy": ["@railguard/policy@workspace:packages/policy"],
+
+    "@railguard/web": ["@railguard/web@workspace:apps/web"],
+  }
+}

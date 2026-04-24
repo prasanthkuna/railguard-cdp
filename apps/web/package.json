@@ -1,0 +1,12 @@
+{
+  "name": "@railguard/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"Next.js app scaffold pending\"",
+    "build": "echo \"Next.js app scaffold pending\"",
+    "lint": "echo \"Next.js lint config pending\"",
+    "typecheck": "echo \"Next.js tsconfig pending\""
+  }
+}
+

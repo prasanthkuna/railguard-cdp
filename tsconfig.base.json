@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@railguard/policy": [
+        "packages/policy/src"
+      ],
+      "@railguard/audit": [
+        "packages/audit/src"
+      ],
+      "@railguard/cdp": [
+        "packages/cdp/src"
+      ],
+      "@railguard/auth": [
+        "packages/auth/src"
+      ],
+      "@railguard/db": [
+        "packages/db/src"
+      ]
+    }
+  }
+}
+

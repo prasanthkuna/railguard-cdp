@@ -1,0 +1,12 @@
+{
+  "name": "@railguard/api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "echo \"Encore.ts app scaffold pending\"",
+    "build": "echo \"Encore.ts app scaffold pending\"",
+    "lint": "echo \"API lint config pending\"",
+    "typecheck": "echo \"API tsconfig pending\""
+  }
+}
+
