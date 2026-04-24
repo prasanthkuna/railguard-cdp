@@ -23,3 +23,13 @@ export function hasRequiredRole(
 
   return allowedRoles.includes(actor.role)
 }
+
+export function normalizeAppRole(value: string | null | undefined): AppRole {
+  const normalized = (value ?? "").trim().toLowerCase()
+
+  if (normalized.includes("owner")) return "owner"
+  if (normalized.includes("finance")) return "finance"
+  if (normalized.includes("approver")) return "approver"
+  if (isAppRole(normalized)) return normalized
+  return "viewer"
+}

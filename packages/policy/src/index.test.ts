@@ -20,6 +20,7 @@ describe("evaluateInvoicePolicy", () => {
       chain: "base-sepolia",
       walletAddress: "0x1111111111111111111111111111111111111111",
       extractionConfidence: 0.98,
+      walletConfidence: 0.99,
       supportedToken: "usdc",
       supportedChain: "base-sepolia",
       reviewThresholdBaseUnits: 5000000000n,
@@ -49,6 +50,7 @@ describe("evaluateInvoicePolicy", () => {
       chain: "base-sepolia",
       walletAddress: "0x2222222222222222222222222222222222222222",
       extractionConfidence: 0.99,
+      walletConfidence: 0.99,
       supportedToken: "usdc",
       supportedChain: "base-sepolia",
       reviewThresholdBaseUnits: 5000000000n,
@@ -77,6 +79,7 @@ describe("evaluateInvoicePolicy", () => {
       chain: "base-sepolia",
       walletAddress: "0x1111111111111111111111111111111111111111",
       extractionConfidence: 0.79,
+      walletConfidence: 0.94,
       supportedToken: "usdc",
       supportedChain: "base-sepolia",
       reviewThresholdBaseUnits: 5000000000n,
@@ -87,5 +90,39 @@ describe("evaluateInvoicePolicy", () => {
     expect(result.triggeredRules).toContain("vendor.pending_onboarding")
     expect(result.triggeredRules).toContain("amount.requires_review")
     expect(result.triggeredRules).toContain("invoice.low_extraction_confidence")
+    expect(result.triggeredRules).toContain("wallet.low_extraction_confidence")
+  })
+
+  test("escalates vendor average spikes and blocks risky wallets", () => {
+    const result = evaluateInvoicePolicy({
+      vendorStatus: "approved",
+      vendorRiskScore: 10,
+      approvedWallets: [
+        {
+          chain: "base-sepolia",
+          address: "0x1111111111111111111111111111111111111111",
+          status: "approved",
+        },
+      ],
+      invoiceNumber: "INV-102",
+      invoiceHash: "hash",
+      amountBaseUnits: "4000000",
+      token: "usdc",
+      chain: "base-sepolia",
+      walletAddress: "0x1111111111111111111111111111111111111111",
+      extractionConfidence: 0.99,
+      walletConfidence: 0.99,
+      walletRiskScore: 95,
+      vendorAverageBaseUnits: 1000000n,
+      amountReviewMultiplier: 3,
+      supportedToken: "usdc",
+      supportedChain: "base-sepolia",
+      reviewThresholdBaseUnits: 5000000000n,
+      hardCapBaseUnits: 100000000000n,
+    })
+
+    expect(result.result).toBe("block")
+    expect(result.triggeredRules).toContain("wallet.risk_score_block")
+    expect(result.triggeredRules).toContain("amount.vendor_average_spike")
   })
 })

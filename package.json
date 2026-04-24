@@ -15,7 +15,12 @@
     "dev:api": "encore run"
   },
   "dependencies": {
-    "encore.dev": "^1.56.6"
+    "@coinbase/cdp-sdk": "^1.48.2",
+    "@workos-inc/node": "^9.1.0",
+    "encore.dev": "^1.56.6",
+    "jose": "^6.2.2",
+    "pdf-lib": "^1.17.1",
+    "viem": "^2.48.4"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4"
