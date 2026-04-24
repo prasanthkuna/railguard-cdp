@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "railguard",
+      "dependencies": {
+        "encore.dev": "^1.56.6",
+      },
     },
     "apps/api": {
       "name": "@railguard/api",
@@ -48,5 +51,7 @@
     "@railguard/policy": ["@railguard/policy@workspace:packages/policy"],
 
     "@railguard/web": ["@railguard/web@workspace:apps/web"],
+
+    "encore.dev": ["encore.dev@1.56.7", "", {}, "sha512-/4nker4fE0S89UAz5CFDKa0XupNkdsRl0pRRONDSKZc/QUVWnMfNu8/mk3Q2nG7qhGLbBwuS1Rv4ClCuoMQ1dA=="],
   }
 }

@@ -8,11 +8,13 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "bun run lint && bun run typecheck",
+    "check": "encore check",
     "lint": "echo \"Linting will be enabled as app code lands.\"",
-    "typecheck": "echo \"TypeScript project references will be wired in with the first implementation pass.\"",
+    "typecheck": "encore check",
     "dev:web": "bun --cwd apps/web run dev",
-    "dev:api": "bun --cwd apps/api run dev"
+    "dev:api": "encore run"
+  },
+  "dependencies": {
+    "encore.dev": "^1.56.6"
   }
 }
-

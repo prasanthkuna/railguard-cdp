@@ -10,6 +10,7 @@ coverage/
 
 # encore
 .encore/
+.playwright-mcp/
 
 # local env
 .env
@@ -28,3 +29,7 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+encore.gen.go
+encore.gen.cue
+/.encore
+/encore.gen
