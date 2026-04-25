@@ -12,10 +12,10 @@
         "jose": "^6.2.2",
         "pdf-lib": "^1.17.1",
         "viem": "^2.48.4",
+        "~encore": "workspace:*",
       },
       "devDependencies": {
         "@biomejs/biome": "1.9.4",
-        "~encore": "file:./encore.gen",
       },
     },
     "apps/api": {
@@ -42,6 +42,10 @@
         "tailwindcss": "3.4.1",
         "typescript": "^5.0.0",
       },
+    },
+    "encore.gen": {
+      "name": "~encore",
+      "version": "0.0.0",
     },
     "packages/audit": {
       "name": "@railguard/audit",
@@ -563,7 +567,7 @@
 
     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
-    "~encore": ["~encore@file:encore.gen", {}],
+    "~encore": ["~encore@workspace:encore.gen"],
 
     "@emnapi/runtime/tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 

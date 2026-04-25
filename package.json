@@ -7,12 +7,13 @@
   "engines": {
     "node": "20"
   },
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": ["apps/*", "packages/*", "encore.gen"],
   "scripts": {
     "check": "bun run lint && bun run test && bun run typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
+    "preinstall": "node -e \"const fs=require('fs'); if(!fs.existsSync('encore.gen')) fs.mkdirSync('encore.gen'); fs.writeFileSync('encore.gen/package.json', JSON.stringify({name:'~encore',version:'0.0.0',type:'module'}))\"",
     "test": "bun test",
     "typecheck": "encore check && bun run --filter @railguard/web typecheck",
     "build:web": "bun run --filter @railguard/web build",
@@ -22,6 +23,7 @@
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.48.2",
     "@workos-inc/node": "^9.1.0",
+    "~encore": "workspace:*",
     "bs58": "^6.0.0",
     "encore.dev": "1.56.6",
     "jose": "^6.2.2",
