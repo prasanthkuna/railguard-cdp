@@ -34,9 +34,10 @@ CREATE TABLE users (
   email TEXT NOT NULL,
   workos_user_id TEXT UNIQUE,
   role TEXT NOT NULL CHECK (role IN ('owner', 'finance', 'approver', 'viewer')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (organization_id, lower(email))
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX users_org_email_idx ON users(organization_id, lower(email));
 
 CREATE TABLE invoice_uploads (
   id TEXT PRIMARY KEY,

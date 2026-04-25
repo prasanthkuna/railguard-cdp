@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------------------------
+   RAILGUARD DESIGN SYSTEM
+   Coinbase-inspired tokens
+   ------------------------------------------- */
+
+:root {
+  /* Brand Colors */
+  --rg-brand: #0052ff;
+  --rg-brand-hover: #578bfa;
+  --rg-brand-link: #0667d0;
+
+  /* Surfaces */
+  --rg-surface-light: #ffffff;
+  --rg-surface-dark: #0a0b0d;
+  --rg-surface-secondary: #eef0f3;
+  --rg-surface-card-dark: #282b31;
+  --rg-surface-subtle: rgba(247, 247, 247, 0.88);
+
+  /* Text */
+  --rg-text-primary: #0a0b0d;
+  --rg-text-inverse: #ffffff;
+  --rg-text-muted: #5b616e;
+
+  /* Borders */
+  --rg-border: rgba(91, 97, 110, 0.2);
+
+  /* Policy Status */
+  --rg-status-allow: #00c853;
+  --rg-status-block: #ff3d00;
+  --rg-status-escalate: #ff9100;
+  --rg-status-info: #0052ff;
+
+  /* Spacing (8px base) */
+  --rg-space-1: 4px;
+  --rg-space-2: 8px;
+  --rg-space-3: 12px;
+  --rg-space-4: 16px;
+  --rg-space-5: 20px;
+  --rg-space-6: 24px;
+  --rg-space-8: 32px;
+  --rg-space-10: 40px;
+  --rg-space-12: 48px;
+  --rg-space-16: 64px;
+
+  /* Border Radius */
+  --rg-radius-sm: 8px;
+  --rg-radius-md: 12px;
+  --rg-radius-lg: 24px;
+  --rg-radius-xl: 40px;
+  --rg-radius-pill: 56px;
+  --rg-radius-full: 100000px;
+
+  /* Elevation */
+  --rg-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --rg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --rg-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* Transitions */
+  --rg-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --rg-duration: 200ms;
+}
+
+/* === RESET & BASE === */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background-color: var(--rg-surface-light);
+  color: var(--rg-text-primary);
+  font-family: var(--font-body), sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--rg-brand-link);
+  text-decoration: none;
+  transition: color var(--rg-duration) var(--rg-ease);
+}
+a:hover {
+  color: var(--rg-brand-hover);
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--rg-text-primary);
+  margin-bottom: var(--rg-space-4);
+}
+
+h1 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 80px;
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-family: var(--font-display), sans-serif;
+  font-size: 64px;
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 36px;
+  line-height: 1.11;
+  font-weight: 400;
+}
+
+h4 {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 32px;
+  line-height: 1.13;
+  font-weight: 400;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--rg-border);
+  border-radius: var(--rg-radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--rg-text-muted);
+}

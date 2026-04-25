@@ -26,6 +26,7 @@ export interface NotificationRequestedMessage {
   channel: "email" | "slack"
   subject: string
   body: string
+  recipient?: string
 }
 
 export const extractionRequestedTopic = new Topic<ExtractionRequestedMessage>(

@@ -3,9 +3,27 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "echo \"Next.js app scaffold pending\"",
-    "build": "echo \"Next.js app scaffold pending\"",
-    "lint": "echo \"Next.js lint config pending\"",
-    "typecheck": "echo \"Next.js tsconfig pending\""
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome check .",
+    "typecheck": "next build --no-lint"
+  },
+  "dependencies": {
+    "next": "15.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "lucide-react": "^0.470.0",
+    "swr": "^2.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.10",
+    "tailwindcss": "3.4.1",
+    "typescript": "^5.0.0"
   }
 }

@@ -18,6 +18,7 @@ const cdpPrivateKey = secret("CDP_PRIVATE_KEY")
 const cdpWalletSecret = secret("CDP_WALLET_SECRET")
 const resendApiKey = secret("RESEND_API_KEY")
 const resendFromEmail = secret("RESEND_FROM_EMAIL")
+const notificationEmailTo = secret("NOTIFICATION_EMAIL_TO")
 const slackWebhookURL = secret("SLACK_WEBHOOK_URL")
 
 const workosIssuer = process.env.WORKOS_ISSUER?.trim() || "https://api.workos.com"
@@ -73,11 +74,25 @@ export interface CdpExecutionResult {
   accountAddress?: string
 }
 
+export interface NotificationDeliveryInput {
+  channel: "email" | "slack"
+  organizationName: string
+  subject: string
+  body: string
+  recipient?: string
+}
+
 let cachedWorkOS: WorkOS | null | undefined
 let cachedJwks: ReturnType<typeof createRemoteJWKSet> | undefined
 
 export function hasWorkOSConfig(): boolean {
   return Boolean(workosClientID() || workosApiKey())
+}
+
+export function isDevHeaderAuthEnabled(): boolean {
+  if (process.env.ALLOW_DEV_HEADER_AUTH === "true") return true
+  if (process.env.ALLOW_DEV_HEADER_AUTH === "false") return false
+  return process.env.NODE_ENV !== "production"
 }
 
 function getWorkOS(): WorkOS {
@@ -368,16 +383,28 @@ export async function executeCdpTransfer(input: {
   }
 }
 
-export async function sendApprovalNotification(input: {
-  organizationName: string
-  subject: string
-  body: string
-}): Promise<void> {
-  await Promise.all([sendResend(input), sendSlack(input)])
+export async function sendNotification(input: NotificationDeliveryInput): Promise<void> {
+  if (input.channel === "email") {
+    await sendResend(input)
+    return
+  }
+
+  await sendSlack(input)
 }
 
-async function sendResend(input: { organizationName: string; subject: string; body: string }) {
+async function sendResend(input: NotificationDeliveryInput) {
   if (!resendApiKey() || !resendFromEmail()) return
+  const recipients = [
+    input.recipient?.trim(),
+    ...notificationEmailTo()
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ].filter(
+    (value, index, values): value is string => Boolean(value) && values.indexOf(value) === index,
+  )
+  if (recipients.length === 0) return
+
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -386,14 +413,14 @@ async function sendResend(input: { organizationName: string; subject: string; bo
     },
     body: JSON.stringify({
       from: resendFromEmail(),
-      to: [resendFromEmail()],
+      to: recipients,
       subject: `[${input.organizationName}] ${input.subject}`,
       text: input.body,
     }),
   })
 }
 
-async function sendSlack(input: { organizationName: string; subject: string; body: string }) {
+async function sendSlack(input: NotificationDeliveryInput) {
   if (!slackWebhookURL()) return
   await fetch(slackWebhookURL(), {
     method: "POST",

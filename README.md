@@ -12,7 +12,7 @@ This repository is structured as a Bun-powered monorepo for the stack we chose i
 
 ## Status
 
-The repository now has a working Encore.ts backend foundation with tenant-scoped vendor, invoice, policy, approval, payment-intent, and audit flows. The web app is still scaffolded, but the backend is deployable and checked in CI.
+The repository now includes a working Encore.ts backend and a Next.js operator console covering dashboard, invoice intake, vendor management, approvals, payment intent review, and audit exports.
 
 ## Repository Layout
 
@@ -37,9 +37,10 @@ prd-v2.md
 1. Install Bun `1.3.4` or newer.
 2. Install the Encore CLI.
 3. Copy `.env.example` to `.env`.
-4. Fill in local credentials for Postgres, WorkOS, AI extraction, and Coinbase CDP.
+4. Fill in credentials for Postgres, WorkOS, AI extraction, Coinbase CDP, and notifications.
 5. Run `bun install`.
 6. Start the backend with `bun run dev:api`.
+7. Start the web app with `bun run dev:web`.
 
 ## Engineering Principles
 
@@ -54,6 +55,7 @@ prd-v2.md
 - `bun run lint`
 - `bun run test`
 - `bun run typecheck`
+- `bun run build:web`
 
 PRs and pushes to `main` run the same checks in GitHub Actions.
 

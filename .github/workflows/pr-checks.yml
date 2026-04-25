@@ -37,3 +37,6 @@ jobs:
 
       - name: Encore typecheck
         run: bun run typecheck
+
+      - name: Web build
+        run: bun run build:web

@@ -46,7 +46,7 @@ import {
   getWorkOSAuthorizationURL,
   hasWorkOSConfig,
   rejectIfUnsafeDocument,
-  sendApprovalNotification,
+  sendNotification,
   sha256Buffer,
   verifyWorkOSWebhook,
 } from "./providers"
@@ -260,7 +260,7 @@ export const getDashboard = api(
         COUNT(*) FILTER (WHERE status = 'blocked')::int AS blocked,
         COUNT(*) FILTER (WHERE status = 'needs_approval')::int AS needs_approval,
         COUNT(*) FILTER (WHERE status IN ('ready', 'approved', 'payment_intent_created'))::int AS ready_to_pay,
-        COALESCE(SUM(amount_base_units) FILTER (WHERE status IN ('payment_intent_created', 'executed')), '0') AS total_protected
+        COALESCE(SUM(amount_base_units::numeric) FILTER (WHERE status IN ('payment_intent_created', 'executed')), 0)::text AS total_protected
       FROM invoices
       WHERE organization_id = ${actor.organizationID}
     `
@@ -674,11 +674,19 @@ export const createPaymentIntent = api(
   { expose: true, auth: true, method: "POST", path: "/payment-intents", sensitive: true },
   async (params: CreatePaymentIntentRequest): Promise<{ paymentIntent: PaymentIntent }> => {
     const actor = await requireActor(["owner", "finance"])
+    ensureIdempotencyKey(params.idempotencyKey)
     const existing = await db.queryRow<PaymentIntentRow>`
       SELECT * FROM payment_intents
       WHERE organization_id = ${actor.organizationID} AND idempotency_key = ${params.idempotencyKey}
     `
-    if (existing) return { paymentIntent: mapPaymentIntent(existing) }
+    if (existing) {
+      if (existing.invoice_id !== params.invoiceID) {
+        throw APIError.failedPrecondition(
+          "payment intent idempotency key is already used for a different invoice",
+        )
+      }
+      return { paymentIntent: mapPaymentIntent(existing) }
+    }
 
     const invoice = await findInvoice(actor.organizationID, params.invoiceID)
     if (!invoice) throw APIError.notFound("invoice not found")
@@ -739,27 +747,71 @@ export const executePaymentIntent = api(
   },
   async (params: ExecutePaymentIntentRequest): Promise<{ paymentIntent: PaymentIntent }> => {
     const actor = await requireActor(["owner", "finance"])
+    ensureIdempotencyKey(params.idempotencyKey)
+
+    const idempotentExecution = await db.queryRow<PaymentIntentRow>`
+      SELECT * FROM payment_intents
+      WHERE organization_id = ${actor.organizationID}
+        AND execution_idempotency_key = ${params.idempotencyKey}
+    `
+    if (idempotentExecution) {
+      if (idempotentExecution.id !== params.id) {
+        throw APIError.failedPrecondition(
+          "execution idempotency key is already used for a different payment intent",
+        )
+      }
+      return { paymentIntent: mapPaymentIntent(idempotentExecution) }
+    }
+
     const existing = await db.queryRow<PaymentIntentRow>`
       SELECT * FROM payment_intents
       WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
     `
     if (!existing) throw APIError.notFound("payment intent not found")
     if (existing.status === "executed") return { paymentIntent: mapPaymentIntent(existing) }
+    if (existing.status === "failed") {
+      throw APIError.failedPrecondition(
+        "payment intent execution previously failed; create a new intent before retrying",
+      )
+    }
 
-    const invoice = await findInvoice(actor.organizationID, existing.invoice_id)
+    const claimed = await db.queryRow<PaymentIntentRow>`
+      UPDATE payment_intents
+      SET execution_idempotency_key = COALESCE(execution_idempotency_key, ${params.idempotencyKey})
+      WHERE organization_id = ${actor.organizationID}
+        AND id = ${params.id}
+        AND status = 'prepared'
+        AND (
+          execution_idempotency_key IS NULL
+          OR execution_idempotency_key = ${params.idempotencyKey}
+        )
+      RETURNING *
+    `
+    if (!claimed) {
+      throw APIError.failedPrecondition(
+        "payment intent is already being executed with a different idempotency key",
+      )
+    }
+
+    const invoice = await findInvoice(actor.organizationID, claimed.invoice_id)
     if (!invoice) throw APIError.notFound("invoice not found")
     await ensurePayable(invoice, userActor(actor))
 
     try {
       const execution = await executeCdpTransfer({
         organizationID: actor.organizationID,
-        recipientAddress: existing.recipient_address,
-        amountBaseUnits: existing.amount_base_units,
-        chain: existing.chain,
+        recipientAddress: claimed.recipient_address,
+        amountBaseUnits: claimed.amount_base_units,
+        chain: claimed.chain,
       })
       const row = await db.queryRow<PaymentIntentRow>`
         UPDATE payment_intents
-        SET status = 'executed', tx_hash = ${execution.txHash}, executed_at = now(), failure_reason = null
+        SET
+          status = 'executed',
+          tx_hash = ${execution.txHash},
+          executed_at = now(),
+          failure_reason = null,
+          execution_idempotency_key = ${params.idempotencyKey}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
         RETURNING *
       `
@@ -793,7 +845,10 @@ export const executePaymentIntent = api(
       const message = error instanceof Error ? error.message : "payment execution failed"
       await db.exec`
         UPDATE payment_intents
-        SET status = 'failed', failure_reason = ${message}
+        SET
+          status = 'failed',
+          failure_reason = ${message},
+          execution_idempotency_key = ${params.idempotencyKey}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
       `
       await appendAudit(
@@ -1143,10 +1198,12 @@ async function processAuditExportRequested(message: AuditExportRequestedMessage)
 
 async function processNotificationRequested(message: NotificationRequestedMessage): Promise<void> {
   const workspace = await loadOrganization(message.organizationID)
-  await sendApprovalNotification({
+  await sendNotification({
+    channel: message.channel,
     organizationName: workspace?.name ?? message.organizationID,
     subject: message.subject,
     body: message.body,
+    recipient: message.recipient,
   })
 }
 
@@ -1651,6 +1708,14 @@ function ensurePositiveBaseUnits(value: string): bigint {
   return BigInt(value)
 }
 
+function ensureIdempotencyKey(value: string): string {
+  const normalized = value.trim()
+  if (normalized.length < 8 || normalized.length > 128) {
+    throw APIError.invalidArgument("idempotencyKey must be between 8 and 128 characters")
+  }
+  return normalized
+}
+
 function ensureConfidence(value: number): void {
   if (value < 0 || value > 1) {
     throw APIError.invalidArgument("confidence must be between 0 and 1")
@@ -1910,6 +1975,7 @@ interface PaymentIntentRow {
   payload_json: unknown
   status: PaymentIntentStatus
   idempotency_key: string
+  execution_idempotency_key: string | null
   tx_hash: string | null
   created_at: Date
 }

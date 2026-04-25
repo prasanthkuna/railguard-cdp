@@ -12,19 +12,22 @@
 Start from `.env.example` and fill in:
 
 - app URL
+- frontend API URL
 - database connection
 - redis connection
 - WorkOS credentials
 - AI extraction provider key
 - Coinbase CDP secrets
+- notification credentials
 
 ## Commands
 
 1. Install dependencies with `bun install`.
 2. Start the backend with `bun run dev:api`.
-3. Run repo checks with `bun run check`.
-4. Lint only with `bun run lint`.
-5. Run unit tests with `bun run test`.
+3. Start the web app with `bun run dev:web`.
+4. Run repo checks with `bun run check`.
+5. Lint only with `bun run lint`.
+6. Run unit tests with `bun run test`.
 
 ## Local auth headers
 

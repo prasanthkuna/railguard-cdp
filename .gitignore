@@ -7,10 +7,16 @@ dist/
 build/
 coverage/
 .turbo/
+*.tsbuildinfo
 
 # encore
 .encore/
 .playwright-mcp/
+
+# deployment / local tooling
+.vercel/
+.skills/
+.pnpm-store/
 
 # local env
 .env

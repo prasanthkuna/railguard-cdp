@@ -1,13 +1,19 @@
 # apps/web
 
-Planned Next.js application for the Railguard operator UI.
+Next.js operator console for Railguard.
 
-Expected first surfaces:
+Current surfaces:
 
 - dashboard
 - invoice inbox
-- invoice detail
-- vendor profile
-- approval queue
-- audit trail
+- invoice detail with approval and payment actions
+- invoice upload
+- vendor list and vendor detail
+- workspace settings
+- audit trail and export flow
 
+Key environment variables:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_ALLOW_DEV_AUTH`

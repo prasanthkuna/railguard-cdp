@@ -4,9 +4,10 @@ CREATE TABLE vendors (
   name TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'blocked')),
   risk_score INTEGER NOT NULL DEFAULT 0 CHECK (risk_score >= 0 AND risk_score <= 100),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (organization_id, lower(name))
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX vendors_org_name_idx ON vendors(organization_id, lower(name));
 
 CREATE TABLE vendor_wallets (
   id TEXT PRIMARY KEY,
@@ -17,9 +18,10 @@ CREATE TABLE vendor_wallets (
   status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'blocked')),
   first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   approved_at TIMESTAMPTZ,
-  approved_by TEXT,
-  UNIQUE (organization_id, vendor_id, chain, lower(address))
+  approved_by TEXT
 );
+
+CREATE UNIQUE INDEX vendor_wallets_org_vendor_chain_addr_idx ON vendor_wallets(organization_id, vendor_id, chain, lower(address));
 
 CREATE TABLE invoices (
   id TEXT PRIMARY KEY,

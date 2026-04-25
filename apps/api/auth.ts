@@ -1,7 +1,7 @@
 import { APIError, Gateway, type Header } from "encore.dev/api"
 import { authHandler } from "encore.dev/auth"
 import { type AuthenticatedActor, isAppRole, normalizeAppRole } from "../../packages/auth/src"
-import { hasWorkOSConfig, verifyWorkOSAccessToken } from "./providers"
+import { hasWorkOSConfig, isDevHeaderAuthEnabled, verifyWorkOSAccessToken } from "./providers"
 
 interface AuthParams {
   authorization: Header<"Authorization">
@@ -15,6 +15,7 @@ export type AuthData = AuthenticatedActor
 
 export const auth = authHandler<AuthParams, AuthData>(async (params) => {
   const token = params.authorization?.replace(/^Bearer\s+/i, "").trim()
+  const devHeaderAuthEnabled = isDevHeaderAuthEnabled()
   if (!token) {
     throw APIError.unauthenticated("missing bearer token")
   }
@@ -34,13 +35,19 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
         email: params.email?.trim(),
       }
     } catch (error) {
-      if (!params.organizationID) {
+      if (!devHeaderAuthEnabled || !params.organizationID) {
         throw APIError.unauthenticated("invalid bearer token")
       }
-      if (!(error instanceof APIError)) {
-        // Fall through to the explicit dev header auth below.
-      }
     }
+  }
+
+  if (!devHeaderAuthEnabled) {
+    if (hasWorkOSConfig()) {
+      throw APIError.unauthenticated("missing valid WorkOS bearer token")
+    }
+    throw APIError.failedPrecondition(
+      "dev header auth is disabled; configure WorkOS or enable ALLOW_DEV_HEADER_AUTH",
+    )
   }
 
   if (!params.organizationID) {
