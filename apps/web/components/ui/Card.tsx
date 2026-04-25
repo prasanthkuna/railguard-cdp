@@ -11,7 +11,8 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
     const variants = {
       default:
         "bg-[var(--rg-surface-light)] border border-[var(--rg-border)] shadow-[var(--rg-shadow-sm)]",
-      dark: "bg-[var(--rg-surface-card-dark)] text-white",
+      dark:
+        "bg-[var(--rg-surface-card-dark)] text-white [--rg-text-primary:var(--rg-text-inverse)] [--rg-text-muted:#b9c1cf] [--rg-border:rgba(255,255,255,0.2)]",
       stat: "bg-[var(--rg-surface-light)] border border-[var(--rg-border)] flex flex-col justify-center",
     }
 
