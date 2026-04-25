@@ -1,7 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
-    "ignore": [".encore/**", "encore.gen/**", "apps/web/.next/**", "apps/web/next-env.d.ts"]
+    "ignore": [
+      ".encore/**",
+      "encore.gen/**",
+      "apps/web/.next/**",
+      "apps/web/next-env.d.ts",
+      ".vercel/**"
+    ]
   },
   "formatter": {
     "enabled": true,
