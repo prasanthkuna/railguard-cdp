@@ -12,13 +12,38 @@ import { Skeleton } from "../../../components/ui/Skeleton"
 import { api } from "../../../lib/api"
 import { getErrorMessage } from "../../../lib/errors"
 import { formatAddress, formatConfidence, formatDate, formatUSDC } from "../../../lib/format"
-import { useInvoice } from "../../../lib/hooks"
+import { useInvoice, useWorkspace } from "../../../lib/hooks"
+import type { OrganizationRecord, PolicyRun } from "../../../lib/types"
+
+type PolicySimulationForm = Pick<
+  OrganizationRecord,
+  | "approvalThresholdBaseUnits"
+  | "hardCapBaseUnits"
+  | "allowedToken"
+  | "allowedChain"
+  | "amountReviewMultiplier"
+  | "walletRiskThreshold"
+>
+
+function simulationDefaults(workspace?: OrganizationRecord): PolicySimulationForm | null {
+  if (!workspace) return null
+
+  return {
+    approvalThresholdBaseUnits: workspace.approvalThresholdBaseUnits,
+    hardCapBaseUnits: workspace.hardCapBaseUnits,
+    allowedToken: workspace.allowedToken,
+    allowedChain: workspace.allowedChain,
+    amountReviewMultiplier: workspace.amountReviewMultiplier,
+    walletRiskThreshold: workspace.walletRiskThreshold,
+  }
+}
 
 export default function InvoiceDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = params?.id as string
   const { invoice, policyRun, paymentIntents, auditEvents, isLoading, mutate } = useInvoice(id)
+  const { workspace } = useWorkspace()
 
   const [approvalModalOpen, setApprovalModalOpen] = React.useState(false)
   const [approvalDecision, setApprovalDecision] = React.useState<"approved" | "rejected">(
@@ -29,6 +54,14 @@ export default function InvoiceDetailPage() {
   const [paymentModalOpen, setPaymentModalOpen] = React.useState(false)
   const [paymentLoading, setPaymentLoading] = React.useState(false)
   const [executeLoading, setExecuteLoading] = React.useState(false)
+  const [simulationForm, setSimulationForm] = React.useState<PolicySimulationForm | null>(null)
+  const [simulationRun, setSimulationRun] = React.useState<PolicyRun | null>(null)
+  const [simulationLoading, setSimulationLoading] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!workspace || simulationForm) return
+    setSimulationForm(simulationDefaults(workspace))
+  }, [simulationForm, workspace])
 
   if (isLoading) {
     return (
@@ -80,6 +113,32 @@ export default function InvoiceDetailPage() {
     } finally {
       setExecuteLoading(false)
     }
+  }
+
+  const handleSimulationChange = <K extends keyof PolicySimulationForm>(
+    key: K,
+    value: PolicySimulationForm[K],
+  ) => {
+    setSimulationForm((current) => (current ? { ...current, [key]: value } : current))
+  }
+
+  const handleSimulatePolicy = async () => {
+    if (!simulationForm) return
+
+    try {
+      setSimulationLoading(true)
+      const { policyRun: simulated } = await api.simulatePolicy(invoice.id, simulationForm)
+      setSimulationRun(simulated)
+    } catch (error) {
+      alert(getErrorMessage(error, "Failed to simulate policy"))
+    } finally {
+      setSimulationLoading(false)
+    }
+  }
+
+  const handleResetSimulation = () => {
+    setSimulationForm(simulationDefaults(workspace))
+    setSimulationRun(null)
   }
 
   return (
@@ -224,6 +283,139 @@ export default function InvoiceDetailPage() {
                   All policies passed. No anomalies detected.
                 </div>
               )}
+            </Card>
+          ) : null}
+
+          {simulationForm ? (
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Policy Simulator</CardTitle>
+                    <p className="text-sm text-[var(--rg-text-muted)]">
+                      Model threshold and chain changes before you update the live workspace.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={handleResetSimulation}>
+                      Reset
+                    </Button>
+                    <Button size="sm" onClick={handleSimulatePolicy} isLoading={simulationLoading}>
+                      Run Simulation
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">
+                    Approval Threshold (base units)
+                  </span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    value={simulationForm.approvalThresholdBaseUnits}
+                    onChange={(event) =>
+                      handleSimulationChange("approvalThresholdBaseUnits", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">
+                    Hard Cap (base units)
+                  </span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    value={simulationForm.hardCapBaseUnits}
+                    onChange={(event) =>
+                      handleSimulationChange("hardCapBaseUnits", event.target.value)
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">Allowed Token</span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    value={simulationForm.allowedToken}
+                    onChange={(event) => handleSimulationChange("allowedToken", event.target.value)}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">Allowed Chain</span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    value={simulationForm.allowedChain}
+                    onChange={(event) => handleSimulationChange("allowedChain", event.target.value)}
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">
+                    Amount Review Multiplier
+                  </span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    type="number"
+                    min="1"
+                    step="0.1"
+                    value={simulationForm.amountReviewMultiplier}
+                    onChange={(event) =>
+                      handleSimulationChange(
+                        "amountReviewMultiplier",
+                        Number(event.target.value || workspace?.amountReviewMultiplier || 3),
+                      )
+                    }
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm">
+                  <span className="font-medium text-[var(--rg-text-primary)]">
+                    Wallet Risk Threshold
+                  </span>
+                  <input
+                    className="flex h-10 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-2 text-sm"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={simulationForm.walletRiskThreshold}
+                    onChange={(event) =>
+                      handleSimulationChange(
+                        "walletRiskThreshold",
+                        Number(event.target.value || workspace?.walletRiskThreshold || 80),
+                      )
+                    }
+                  />
+                </label>
+              </div>
+
+              {simulationRun ? (
+                <div className="mt-6 rounded-2xl border border-[var(--rg-border)] bg-[var(--rg-bg-soft)] p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--rg-text-primary)]">
+                        Simulation Result
+                      </p>
+                      <p className="text-sm text-[var(--rg-text-muted)]">
+                        This preview does not change the stored invoice status.
+                      </p>
+                    </div>
+                    <Badge status={simulationRun.result} />
+                  </div>
+                  {simulationRun.triggeredRules.length ? (
+                    <ul className="space-y-2 text-sm">
+                      {simulationRun.triggeredRules.map((rule) => (
+                        <li key={rule} className="flex items-start gap-2">
+                          <X className="mt-0.5 h-4 w-4 text-[var(--rg-status-block)]" />
+                          <span>{rule}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                      <Check className="h-4 w-4" />
+                      Simulation passed with no triggered rules.
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </Card>
           ) : null}
 

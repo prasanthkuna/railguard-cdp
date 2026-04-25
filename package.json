@@ -17,6 +17,7 @@
     "test": "bun test",
     "typecheck": "encore check && bun run --filter @railguard/web typecheck",
     "build:web": "bun run --filter @railguard/web build",
+    "verify:demo": "bun run scripts/seed-and-verify.ts",
     "dev:web": "bun run --filter @railguard/web dev",
     "dev:api": "encore run"
   },

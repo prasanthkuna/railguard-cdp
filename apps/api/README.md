@@ -2,6 +2,8 @@
 
 Encore.ts backend for Railguard's verification-first payment control plane.
 
+Detailed endpoint notes live in [docs/api/endpoints.md](../../docs/api/endpoints.md).
+
 ## Current endpoints
 
 - `GET /health`
@@ -33,3 +35,7 @@ Local development uses Encore's auth gateway with headers:
 - idempotent payment-intent creation
 - demo Base Sepolia USDC execution payload generation
 - hash-chained audit log entries for every decision transition
+
+## Verification
+
+- `bun run verify:demo` seeds and validates the non-auth product flows against a local or deployed backend

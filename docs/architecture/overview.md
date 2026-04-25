@@ -19,3 +19,16 @@ Railguard is split into a user-facing operator application and a service-oriente
 - Wallet execution is downstream of business policy, not a substitute for it.
 - Security and auditability matter more than minimizing table count or service count.
 
+## Positioning Against CDP Policy Engine
+
+Railguard complements Coinbase CDP instead of trying to replace it.
+
+- Railguard handles invoice ingestion, vendor history, duplicate detection, business approvals, and audit evidence.
+- Coinbase CDP remains the execution layer that actually prepares or broadcasts wallet activity.
+- The operator experience is deliberately split so business policy stays explainable before any transfer request reaches CDP.
+
+## Supporting Docs
+
+- Threat model: [docs/architecture/threat-model.md](./threat-model.md)
+- API surface: [docs/api/endpoints.md](../api/endpoints.md)
+- Demo verification runbook: [docs/runbooks/demo-verification.md](../runbooks/demo-verification.md)

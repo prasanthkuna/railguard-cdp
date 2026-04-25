@@ -15,8 +15,10 @@ export interface AuthSession {
   email: string
 }
 
+const DEFAULT_DEV_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID || "org_demo_rollout"
+
 const DEFAULT_IDENTITY: DevIdentity = {
-  organizationID: "org_demo",
+  organizationID: DEFAULT_DEV_ORG_ID,
   userID: "usr_demo",
   role: "owner",
   email: "admin@demo.railguard",
@@ -31,11 +33,29 @@ export function isDevAuthEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ALLOW_DEV_AUTH !== "false"
 }
 
+function normalizeDevIdentity(identity: DevIdentity): DevIdentity {
+  if (!identity.organizationID?.trim() || identity.organizationID === "org_demo") {
+    return {
+      ...identity,
+      organizationID: DEFAULT_DEV_ORG_ID,
+    }
+  }
+
+  return identity
+}
+
 export function getDevIdentity(): DevIdentity {
   if (typeof window === "undefined") return DEFAULT_IDENTITY
   try {
     const stored = localStorage.getItem("railguard_identity")
-    return stored ? JSON.parse(stored) : DEFAULT_IDENTITY
+    if (!stored) return DEFAULT_IDENTITY
+
+    const rawIdentity = JSON.parse(stored) as DevIdentity
+    const parsed = normalizeDevIdentity(rawIdentity)
+    if (parsed.organizationID !== rawIdentity.organizationID) {
+      localStorage.setItem("railguard_identity", JSON.stringify(parsed))
+    }
+    return parsed
   } catch {
     return DEFAULT_IDENTITY
   }

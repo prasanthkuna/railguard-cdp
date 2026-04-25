@@ -110,6 +110,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ invoiceID }),
     }),
+  simulatePolicy: (
+    invoiceID: string,
+    settings: Pick<
+      OrganizationRecord,
+      | "approvalThresholdBaseUnits"
+      | "hardCapBaseUnits"
+      | "allowedToken"
+      | "allowedChain"
+      | "amountReviewMultiplier"
+      | "walletRiskThreshold"
+    >,
+  ) =>
+    apiFetch<{ policyRun: PolicyRun }>("/policy/simulate", {
+      method: "POST",
+      body: JSON.stringify({ invoiceID, ...settings }),
+    }),
 
   // Approvals
   decideApproval: (invoiceID: string, decision: "approved" | "rejected", reason?: string) =>

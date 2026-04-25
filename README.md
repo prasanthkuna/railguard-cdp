@@ -56,6 +56,7 @@ prd-v2.md
 - `bun run test`
 - `bun run typecheck`
 - `bun run build:web`
+- `bun run verify:demo`
 
 PRs and pushes to `main` run the same checks in GitHub Actions.
 
@@ -63,4 +64,7 @@ PRs and pushes to `main` run the same checks in GitHub Actions.
 
 - Product requirements: [prd-v2.md](./prd-v2.md)
 - Architecture overview: [docs/architecture/overview.md](./docs/architecture/overview.md)
+- Threat model: [docs/architecture/threat-model.md](./docs/architecture/threat-model.md)
+- API endpoints: [docs/api/endpoints.md](./docs/api/endpoints.md)
 - Local setup notes: [docs/runbooks/local-setup.md](./docs/runbooks/local-setup.md)
+- Demo verification runbook: [docs/runbooks/demo-verification.md](./docs/runbooks/demo-verification.md)
