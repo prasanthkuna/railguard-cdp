@@ -13,7 +13,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "preinstall": "node -e \"const fs=require('fs'); if(!fs.existsSync('encore.gen')) fs.mkdirSync('encore.gen'); const manifest='encore.gen/package.json'; if(!fs.existsSync(manifest)) fs.writeFileSync(manifest, JSON.stringify({name:'~encore',version:'0.0.0',type:'module',exports:{'./auth':'./auth/index.js','./clients':'./clients/index.js'}}));\"",
+    "preinstall": "node -e \"const fs=require('fs'); if(!fs.existsSync('encore.gen')) fs.mkdirSync('encore.gen'); fs.writeFileSync('encore.gen/package.json', JSON.stringify({name:'~encore',version:'0.0.0',type:'module'}))\"",
     "test": "bun test",
     "typecheck": "encore check && bun run --filter @railguard/web typecheck",
     "build:web": "bun run --filter @railguard/web build",

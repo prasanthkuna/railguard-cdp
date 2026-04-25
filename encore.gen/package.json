@@ -1,1 +1,1 @@
-{"name":"~encore","version":"0.0.0","type":"module","exports":{"./auth":"./auth/index.js","./clients":"./clients/index.js"}}
+{"name":"~encore","version":"0.0.0","type":"module"}
