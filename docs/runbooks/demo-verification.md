@@ -19,6 +19,8 @@ Use this runbook to seed a realistic workspace and prove the non-auth product fl
 bun run verify:demo
 ```
 
+Default mode is `curated`, which seeds into a fresh org id (`org_curated_<runID>`) so recording data stays clean and non-duplicative.
+
 The script reads local `.env` or `.env.local` values by default. Override the target explicitly for deployed environments:
 
 ```bash
@@ -27,12 +29,21 @@ RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
 
 Optional overrides:
 
+- `RAILGUARD_MODE` (`curated` or `stress`)
 - `RAILGUARD_ORG_ID`
 - `RAILGUARD_WORKSPACE_NAME`
 - `RAILGUARD_OWNER_EMAIL`
 - `RAILGUARD_RUN_ID`
 
-If you do not provide `RAILGUARD_ORG_ID` and the workspace does not exist yet, the script bootstraps a new workspace and continues with the returned organization id.
+Recommended usage:
+
+```bash
+# Clean showcase dataset for videos and GTM proof
+RAILGUARD_MODE=curated RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
+
+# Repeatable stress validation against the long-lived org
+RAILGUARD_MODE=stress RAILGUARD_ORG_ID=org_demo_rollout RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
+```
 
 ## Expected Proof Points
 

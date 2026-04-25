@@ -32,11 +32,13 @@ export default function VendorsPage() {
           <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
             Vendors
           </h1>
-          <p className="text-[var(--rg-text-muted)]">Manage approved vendors and their wallets.</p>
+          <p className="text-[var(--rg-text-muted)]">
+            Maintain payout counterparties, wallet approvals, and risk posture.
+          </p>
         </div>
         <Button className="gap-2" onClick={() => router.push("/vendors/new")}>
           <Plus className="h-4 w-4" />
-          Add Vendor
+          Add Counterparty
         </Button>
       </div>
 
@@ -51,8 +53,10 @@ export default function VendorsPage() {
           <div className="p-6">
             <EmptyState
               title="No vendors found"
-              description="Add your first vendor to start processing payments."
-              action={<Button onClick={() => router.push("/vendors/new")}>Add Vendor</Button>}
+              description="Create your approved vendor registry before releasing payments."
+              action={
+                <Button onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>
+              }
             />
           </div>
         ) : (

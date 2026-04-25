@@ -42,7 +42,15 @@ export default function InvoicesPage() {
           <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
             Invoice Inbox
           </h1>
-          <p className="text-[var(--rg-text-muted)]">Manage and verify incoming invoices.</p>
+          <p className="text-[var(--rg-text-muted)]">
+            Triage incoming payables, verify risk signals, and clear approvals.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => router.push("/vendors")}>
+            Vendor Registry
+          </Button>
+          <Button onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>
         </div>
       </div>
 
@@ -71,9 +79,9 @@ export default function InvoicesPage() {
           <div className="p-6">
             <EmptyState
               title="No invoices found"
-              description="Upload your first invoice to begin verification."
+              description="Import invoice documents or create records to start the payable review queue."
               action={
-                <Button onClick={() => router.push("/invoices/upload")}>Upload Invoice</Button>
+                <Button onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>
               }
             />
           </div>

@@ -83,7 +83,7 @@ export default function AuditPage() {
             Audit Trail
           </h1>
           <p className="text-[var(--rg-text-muted)]">
-            Immutable append-only ledger of all workspace activity.
+            Immutable ledger of policy decisions, approvals, and payment actions.
           </p>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function AuditPage() {
           <div className="flex-[2]">
             <Input
               label="Entity ID"
-              placeholder="e.g. org_123 or inv_456"
+              placeholder="organization_id, invoice_id, vendor_id, or payment_intent_id"
               value={entityID}
               onChange={(e) => setEntityID(e.target.value)}
               required
@@ -144,7 +144,7 @@ export default function AuditPage() {
                 onClick={handleExport}
               >
                 <Download className="h-4 w-4" />
-                Export CSV
+                Export Evidence
               </Button>
             )}
           </CardHeader>

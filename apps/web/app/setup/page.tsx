@@ -41,14 +41,14 @@ export default function SetupPage() {
           </div>
           <CardTitle>Welcome to Railguard</CardTitle>
           <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
-            Create your workspace to start securing payments.
+            Create your operations workspace to enforce payment controls.
           </p>
         </CardHeader>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <Input
             label="Workspace Name"
-            placeholder="Acme Corp"
+            placeholder="Example: Apex Treasury Ops"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
@@ -57,7 +57,7 @@ export default function SetupPage() {
           <Input
             label="Owner Email (optional)"
             type="email"
-            placeholder="admin@acme.com"
+            placeholder="finance-ops@company.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -65,7 +65,7 @@ export default function SetupPage() {
           {error && <p className="text-sm text-[var(--rg-status-block)]">{error}</p>}
 
           <Button type="submit" className="w-full" isLoading={loading} disabled={!name.trim()}>
-            Create Workspace
+            Initialize Workspace
           </Button>
         </form>
       </Card>

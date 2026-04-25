@@ -19,10 +19,10 @@ const DEFAULT_DEV_ORG_ID = process.env.NEXT_PUBLIC_DEFAULT_ORG_ID || "org_demo_r
 
 const DEFAULT_IDENTITY: DevIdentity = {
   organizationID: DEFAULT_DEV_ORG_ID,
-  userID: "usr_demo",
+  userID: "usr_operator_primary",
   role: "owner",
-  email: "admin@demo.railguard",
-  token: "demo-token",
+  email: "ops@railguard.ai",
+  token: "operator-token",
 }
 
 const AUTH_SESSION_KEY = "railguard_auth_session"

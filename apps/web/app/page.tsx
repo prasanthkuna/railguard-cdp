@@ -44,17 +44,23 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
-            Dashboard
+            Control Center
           </h1>
           <p className="text-[var(--rg-text-muted)]">
-            Overview of {workspace.name}'s payment security.
+            Live invoice risk posture and approval health for {workspace.name}.
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/invoices/upload">
+            <Button className="gap-2">
+              <FileText className="h-4 w-4" />
+              Import Invoice
+            </Button>
+          </Link>
           <Link href="/invoices">
             <Button variant="secondary" className="gap-2">
               <FileText className="h-4 w-4" />
-              View All Invoices
+              Review Queue
             </Button>
           </Link>
         </div>
@@ -120,7 +126,7 @@ export default function DashboardPage() {
               {formatUSDC(data.totalProtectedBaseUnits)}
             </p>
             <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
-              Total volume secured by Railguard this month
+              Gross payment volume screened with policy controls
             </p>
           </div>
         </Card>
@@ -134,7 +140,7 @@ export default function DashboardPage() {
               {data.riskEventsDetected}
             </p>
             <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
-              Policy violations and anomalies blocked
+              Triggered policy events requiring review or intervention
             </p>
           </div>
         </Card>

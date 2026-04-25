@@ -66,6 +66,8 @@ interface ApiErrorBody {
   error?: string
 }
 
+type RunMode = "curated" | "stress"
+
 function parseEnvFile(fileName: string): Record<string, string> {
   const fullPath = join(process.cwd(), fileName)
   if (!existsSync(fullPath)) return {}
@@ -99,9 +101,9 @@ const baseURL = stripTrailingSlash(
     env("NEXT_PUBLIC_API_URL", env("APP_BASE_URL", "http://localhost:4000")),
   ),
 )
-const requestedOrgID = env("RAILGUARD_ORG_ID", "org_demo_rollout")
-const workspaceName = env("RAILGUARD_WORKSPACE_NAME", "Railguard Demo Verification")
-const ownerEmail = env("RAILGUARD_OWNER_EMAIL", "ops@railguard.demo")
+const mode = ((env("RAILGUARD_MODE", "curated").toLowerCase() as RunMode) === "stress"
+  ? "stress"
+  : "curated") as RunMode
 const runID = env(
   "RAILGUARD_RUN_ID",
   new Date()
@@ -109,6 +111,15 @@ const runID = env(
     .replace(/[^0-9]/g, "")
     .slice(0, 14),
 )
+const requestedOrgID = env(
+  "RAILGUARD_ORG_ID",
+  mode === "curated" ? `org_curated_${runID}` : "org_demo_rollout",
+)
+const workspaceName = env(
+  "RAILGUARD_WORKSPACE_NAME",
+  mode === "curated" ? `Railguard Showcase ${runID}` : "Railguard Demo Verification",
+)
+const ownerEmail = env("RAILGUARD_OWNER_EMAIL", "ops@railguard.ai")
 
 let activeOrgID = requestedOrgID
 
@@ -116,8 +127,8 @@ const authHeaders = () => ({
   Authorization: "Bearer demo-token",
   "X-Organization-Id": activeOrgID,
   "X-Role": "owner",
-  "X-User-Id": env("RAILGUARD_USER_ID", "usr_demo_rollout"),
-  "X-User-Email": env("RAILGUARD_USER_EMAIL", "ops@railguard.demo"),
+  "X-User-Id": env("RAILGUARD_USER_ID", "usr_operator_primary"),
+  "X-User-Email": env("RAILGUARD_USER_EMAIL", "ops@railguard.ai"),
 })
 
 async function api<T>(
@@ -297,6 +308,7 @@ async function main() {
     JSON.stringify(
       {
         baseURL,
+        mode,
         requestedOrgID,
         runID,
       },
