@@ -1513,18 +1513,28 @@ async function findDuplicateInvoice(
   organizationID: string,
   invoice: Invoice,
 ): Promise<Invoice | null> {
-  const row = await db.queryRow<InvoiceRow>`
-    SELECT * FROM invoices
-    WHERE organization_id = ${organizationID}
-      AND vendor_id = ${invoice.vendorID}
-      AND id <> ${invoice.id}
-      AND (
-        invoice_hash = ${invoice.invoiceHash}
-        OR (${invoice.invoiceNumber ?? null} IS NOT NULL AND invoice_number = ${invoice.invoiceNumber ?? null})
-      )
-    ORDER BY created_at ASC
-    LIMIT 1
-  `
+  const row = invoice.invoiceNumber
+    ? await db.queryRow<InvoiceRow>`
+        SELECT * FROM invoices
+        WHERE organization_id = ${organizationID}
+          AND vendor_id = ${invoice.vendorID}
+          AND id <> ${invoice.id}
+          AND (
+            invoice_hash = ${invoice.invoiceHash}
+            OR invoice_number = ${invoice.invoiceNumber}
+          )
+        ORDER BY created_at ASC
+        LIMIT 1
+      `
+    : await db.queryRow<InvoiceRow>`
+        SELECT * FROM invoices
+        WHERE organization_id = ${organizationID}
+          AND vendor_id = ${invoice.vendorID}
+          AND id <> ${invoice.id}
+          AND invoice_hash = ${invoice.invoiceHash}
+        ORDER BY created_at ASC
+        LIMIT 1
+      `
   return row ? mapInvoice(row) : null
 }
 
