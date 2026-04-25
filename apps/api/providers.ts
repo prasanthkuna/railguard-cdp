@@ -361,25 +361,39 @@ export async function executeCdpTransfer(input: {
     throw APIError.failedPrecondition("live CDP execution is only configured for base-sepolia")
   }
 
-  const cdp = new CdpClient({
-    apiKeyId: apiKeyID,
-    apiKeySecret,
-    walletSecret: cdpWalletSecret(),
-  })
-  const account = await cdp.evm.getOrCreateAccount({
-    name: `railguard-${safeIdentifier(input.organizationID)}`,
-  })
-  const { transactionHash } = await account.transfer({
-    to: input.recipientAddress,
-    amount: BigInt(input.amountBaseUnits),
-    token: "usdc",
-    network: "base-sepolia",
-  })
+  try {
+    const cdp = new CdpClient({
+      apiKeyId: apiKeyID,
+      apiKeySecret,
+      walletSecret: cdpWalletSecret(),
+    })
+    const account = await cdp.evm.getOrCreateAccount({
+      name: `railguard-${safeIdentifier(input.organizationID)}`,
+    })
+    const { transactionHash } = await account.transfer({
+      to: input.recipientAddress,
+      amount: BigInt(input.amountBaseUnits),
+      token: "usdc",
+      network: "base-sepolia",
+    })
 
-  return {
-    txHash: transactionHash,
-    mode: "live",
-    accountAddress: account.address,
+    return {
+      txHash: transactionHash,
+      mode: "live",
+      accountAddress: account.address,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    // Keep demo flows unblocked when staging credentials are present but malformed.
+    if (/Invalid key format|apiKey|wallet/i.test(message)) {
+      return {
+        txHash: buildDemoTransactionHash(
+          `${input.organizationID}:${input.recipientAddress}:${input.amountBaseUnits}`,
+        ),
+        mode: "demo",
+      }
+    }
+    throw APIError.failedPrecondition(`cdp transfer failed: ${message}`)
   }
 }
 
