@@ -1,8 +1,8 @@
-import { randomUUID } from "node:crypto"
+import { randomUUID } from "crypto"
 import { APIError, type Query, api } from "encore.dev/api"
 import { Subscription } from "encore.dev/pubsub"
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
-import { getAuthData } from "../../encore.gen/auth"
+import { getAuthData } from "~encore/auth"
 import { buildAuditHash, stableStringify } from "../../packages/audit/src"
 import { type AppRole, type AuthenticatedActor, hasRequiredRole } from "../../packages/auth/src"
 import {

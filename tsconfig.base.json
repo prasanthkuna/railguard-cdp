@@ -18,7 +18,8 @@
       "@railguard/audit": ["packages/audit/src"],
       "@railguard/cdp": ["packages/cdp/src"],
       "@railguard/auth": ["packages/auth/src"],
-      "@railguard/db": ["packages/db/src"]
+      "@railguard/db": ["packages/db/src"],
+      "~encore/*": ["encore.gen/*"]
     }
   }
 }
