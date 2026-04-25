@@ -8,7 +8,7 @@
         "@coinbase/cdp-sdk": "^1.48.2",
         "@workos-inc/node": "^9.1.0",
         "bs58": "^6.0.0",
-        "encore.dev": "^1.56.7",
+        "encore.dev": "1.56.6",
         "jose": "^6.2.2",
         "pdf-lib": "^1.17.1",
         "viem": "^2.48.4",
@@ -360,7 +360,7 @@
 
     "electron-to-chromium": ["electron-to-chromium@1.5.344", "", {}, "sha512-4MxfbmNDm+KPh066EZy+eUnkcDPcZ35wNmOWzFuh/ijvHsve6kbLTLURy88uCNK5FbpN+yk2nQY6BYh1GEt+wg=="],
 
-    "encore.dev": ["encore.dev@1.56.7", "", {}, "sha512-/4nker4fE0S89UAz5CFDKa0XupNkdsRl0pRRONDSKZc/QUVWnMfNu8/mk3Q2nG7qhGLbBwuS1Rv4ClCuoMQ1dA=="],
+    "encore.dev": ["encore.dev@1.56.6", "", {}, "sha512-bDa8Yf+KNiLRL95rvxSi5uJHAkD0+uRPaEHZJgVexYD/wHjzyd3uwiF7Nj6z6ZBaDJHDGXZd42LS5BngE8vbbA=="],
 
     "es-define-property": ["es-define-property@1.0.1", "", {}, "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g=="],
 
