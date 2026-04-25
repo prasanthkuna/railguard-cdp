@@ -2,6 +2,9 @@
   "name": "@railguard/api",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "encore run",
     "build": "encore check",
