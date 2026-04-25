@@ -6,7 +6,10 @@
       "*"
     ],
     "allow_origins_with_credentials": [
-      "http://localhost:3000"
+      "http://localhost:3000",
+      "https://coinbase-eight-xi.vercel.app",
+      "https://coinbase-prasanthkunas-projects.vercel.app",
+      "https://coinbase-prasanthkuna-prasanthkunas-projects.vercel.app"
     ]
   }
 }
