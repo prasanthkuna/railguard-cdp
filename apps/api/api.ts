@@ -50,8 +50,10 @@ import {
   sendNotification,
   sha256Buffer,
   verifyWorkOSWebhook,
+  waitForTransferConfirmation,
 } from "./providers"
 import {
+  commitPaymentGuardSpend,
   evaluatePaymentGuard,
   isX402GuardEnabled,
   recordPaymentSettlement,
@@ -654,9 +656,16 @@ export const decideApproval = api(
     const invoice = await findInvoice(actor.organizationID, params.invoiceID)
     if (!invoice) throw APIError.notFound("invoice not found")
 
+    const policyRun = await db.queryRow<{ id: string }>`
+      SELECT id FROM policy_runs
+      WHERE organization_id = ${actor.organizationID} AND invoice_id = ${invoice.id}
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+
     await db.exec`
-      INSERT INTO approvals (id, organization_id, invoice_id, required_role, approver_user_id, decision, reason)
-      VALUES (${id("apr")}, ${actor.organizationID}, ${invoice.id}, 'approver', ${actor.userID}, ${params.decision}, ${params.reason ?? null})
+      INSERT INTO approvals (id, organization_id, invoice_id, required_role, approver_user_id, decision, reason, policy_run_id)
+      VALUES (${id("apr")}, ${actor.organizationID}, ${invoice.id}, 'approver', ${actor.userID}, ${params.decision}, ${params.reason ?? null}, ${policyRun?.id ?? null})
     `
 
     const nextStatus: InvoiceStatus = params.decision === "approved" ? "approved" : "rejected"
@@ -796,11 +805,23 @@ export const executePaymentIntent = api(
     const invoice = await findInvoice(actor.organizationID, existing.invoice_id)
     if (!invoice) throw APIError.notFound("invoice not found")
     await ensurePayable(invoice, userActor(actor))
+    await assertExecutorDiffersFromApprover(actor.organizationID, actor.userID, invoice.id)
 
     let guardReceiptId: string | undefined
+    let guardInput:
+      | {
+          organizationID: string
+          payer: string
+          payTo: string
+          amountBaseUnits: string
+          chain: string
+          resourceUrl: string
+          idempotencyKey: string
+        }
+      | undefined
     if (isX402GuardEnabled()) {
       const payerAddress = await resolveCdpPayerAddress(actor.organizationID)
-      const guardResult = await evaluatePaymentGuard({
+      guardInput = {
         organizationID: actor.organizationID,
         payer: payerAddress,
         payTo: existing.recipient_address,
@@ -808,7 +829,8 @@ export const executePaymentIntent = api(
         chain: existing.chain,
         resourceUrl: `https://railguard.local/payment-intents/${params.id}`,
         idempotencyKey,
-      })
+      }
+      const guardResult = await evaluatePaymentGuard(guardInput)
       guardReceiptId = guardResult.decision.receiptId
       await appendAudit(
         actor.organizationID,
@@ -874,6 +896,10 @@ export const executePaymentIntent = api(
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
       `
 
+      if (execution.mode === "live") {
+        await waitForTransferConfirmation(execution.txHash)
+      }
+
       const row = await db.queryRow<PaymentIntentRow>`
         UPDATE payment_intents
         SET
@@ -918,6 +944,9 @@ export const executePaymentIntent = api(
             },
             userActor(actor),
           )
+        }
+        if (guardInput) {
+          await commitPaymentGuardSpend(guardInput)
         }
       }
       await appendAudit(
@@ -1541,8 +1570,8 @@ async function ensurePayable(invoice: Invoice, actor: SystemActor): Promise<void
     throw APIError.failedPrecondition("payment blocked by policy")
   }
   if (policyRun.result === "escalate") {
-    const approval = await db.queryRow<{ id: string }>`
-      SELECT id FROM approvals
+    const approval = await db.queryRow<{ id: string; policy_run_id: string | null }>`
+      SELECT id, policy_run_id FROM approvals
       WHERE organization_id = ${actor.organizationID}
         AND invoice_id = ${invoice.id}
         AND decision = 'approved'
@@ -1550,6 +1579,31 @@ async function ensurePayable(invoice: Invoice, actor: SystemActor): Promise<void
       LIMIT 1
     `
     if (!approval) throw APIError.failedPrecondition("payment requires approval")
+    if (approval.policy_run_id && approval.policy_run_id !== policyRun.id) {
+      throw APIError.failedPrecondition(
+        "approval is stale relative to the latest policy evaluation; re-approve after policy re-run",
+      )
+    }
+  }
+}
+
+async function assertExecutorDiffersFromApprover(
+  organizationID: string,
+  executorUserID: string,
+  invoiceID: string,
+): Promise<void> {
+  const approval = await db.queryRow<{ approver_user_id: string }>`
+    SELECT approver_user_id FROM approvals
+    WHERE organization_id = ${organizationID}
+      AND invoice_id = ${invoiceID}
+      AND decision = 'approved'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+  if (approval?.approver_user_id === executorUserID) {
+    throw APIError.failedPrecondition(
+      "executor must differ from approver (separation of duties)",
+    )
   }
 }
 

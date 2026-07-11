@@ -7,7 +7,7 @@
   "engines": {
     "node": "20"
   },
-  "workspaces": ["apps/*", "packages/*", "encore.gen"],
+  "workspaces": ["apps/api", "apps/web", "packages/*", "encore.gen"],
   "scripts": {
     "check": "bun run lint && bun run test && bun run typecheck",
     "lint": "biome check .",
@@ -17,6 +17,12 @@
     "test": "bun test",
     "typecheck": "encore check && bun run --filter @railguard/web typecheck",
     "build:web": "bun run --filter @railguard/web build",
+    "dev:video": "bun run --filter @railguard/video dev",
+    "render:video": "bun run --filter @railguard/video render",
+    "render:social": "bun run --filter @railguard/video render:social",
+    "capture:shots": "bun run scripts/capture-staging-shots.ts",
+    "capture:rotato": "bun run scripts/capture-rotato-pack.ts",
+    "render:demo-4k": "powershell -ExecutionPolicy Bypass -File scripts/render-railguard-demo.ps1",
     "verify:demo": "bun run scripts/seed-and-verify.ts",
     "dev:web": "bun run --filter @railguard/web dev",
     "dev:api": "encore run"
@@ -32,6 +38,7 @@
     "viem": "^2.48.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4"
+    "@biomejs/biome": "1.9.4",
+    "playwright": "^1.52.0"
   }
 }

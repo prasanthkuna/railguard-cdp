@@ -19,6 +19,9 @@
       "@railguard/cdp": ["packages/cdp/src"],
       "@railguard/auth": ["packages/auth/src"],
       "@railguard/db": ["packages/db/src"],
+      "@x402-guard/core": ["../x402-guard/packages/core/src"],
+      "@x402-guard/policy": ["../x402-guard/packages/policy/src"],
+      "@x402-guard/middleware": ["../x402-guard/packages/middleware/src"],
       "~encore/*": ["encore.gen/*"]
     }
   }

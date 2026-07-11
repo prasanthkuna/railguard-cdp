@@ -6,7 +6,9 @@ import { secret } from "encore.dev/config"
 import { createRemoteJWKSet, jwtVerify } from "jose"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
 import { BASE_SEPOLIA_CHAIN, buildDemoTransactionHash } from "../../packages/cdp/src"
-import { PAYMENT_MODE } from "./config"
+import { resolvePaymentMode, type PaymentExecutionMode } from "./config"
+import { createPublicClient, http } from "viem"
+import { baseSepolia } from "viem/chains"
 
 const workosApiKey = secret("WORKOS_API_KEY")
 const workosClientID = secret("WORKOS_CLIENT_ID")
@@ -25,10 +27,17 @@ const slackWebhookURL = secret("SLACK_WEBHOOK_URL")
 const workosIssuer = process.env.WORKOS_ISSUER?.trim() || "https://api.workos.com"
 const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 
-export type PaymentExecutionMode = "demo" | "live"
+export type { PaymentExecutionMode } from "./config"
 
-export function resolvePaymentMode(): PaymentExecutionMode {
-  return PAYMENT_MODE
+export async function waitForTransferConfirmation(txHash: string): Promise<void> {
+  const client = createPublicClient({
+    chain: baseSepolia,
+    transport: http(),
+  })
+  await client.waitForTransactionReceipt({
+    hash: txHash as `0x${string}`,
+    confirmations: 1,
+  })
 }
 
 function hasLiveCdpCredentials(): boolean {

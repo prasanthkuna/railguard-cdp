@@ -2,24 +2,21 @@ import { APIError } from "encore.dev/api"
 
 export type PaymentExecutionMode = "demo" | "live"
 
-function readPaymentMode(): PaymentExecutionMode {
+let cachedPaymentMode: PaymentExecutionMode | undefined
+
+/** Fail-closed at execution time; lazy so `encore check` can load the module without PAYMENT_MODE. */
+export function resolvePaymentMode(): PaymentExecutionMode {
+  if (cachedPaymentMode) return cachedPaymentMode
   const raw = process.env.PAYMENT_MODE?.trim().toLowerCase()
   if (raw !== "demo" && raw !== "live") {
-    throw new Error(
-      "PAYMENT_MODE must be explicitly set to 'demo' or 'live' before the API starts",
+    throw APIError.failedPrecondition(
+      "PAYMENT_MODE must be explicitly set to 'demo' or 'live' before executing payments",
     )
   }
-  return raw
+  cachedPaymentMode = raw
+  return cachedPaymentMode
 }
-
-/** Fail-closed: no implicit demo mode when PAYMENT_MODE is unset. */
-export const PAYMENT_MODE: PaymentExecutionMode = readPaymentMode()
 
 export function assertPaymentModeConfigured(): void {
-  // Module load already enforced; exposed for tests and encore check imports.
-  if (PAYMENT_MODE !== "demo" && PAYMENT_MODE !== "live") {
-    throw APIError.failedPrecondition("PAYMENT_MODE must be demo or live")
-  }
+  resolvePaymentMode()
 }
-
-assertPaymentModeConfigured()
