@@ -1,5 +1,27 @@
-# Superseded
+# Railguard CDP
 
-This repository is an earlier experiment and is **not** the Railguard v1 proof-of-work.
+Private product repo — invoice-to-USDC on Base Sepolia via CDP.
 
-**Current project:** [railguard-new](https://github.com/prasanthkuna/railguard-new) â€” policy-enforced execution safety for AI-agent stablecoin payments (Foundry + SignGate + SDK).
+## Sibling repos
+
+| Repo | Role |
+|------|------|
+| [railguard-new](https://github.com/prasanthkuna/railguard-new) | On-chain ERC-7579 hook + SignGate |
+| [x402-guard](https://github.com/prasanthkuna/x402-guard) | Pre-sign agent payment policy |
+
+## x402-guard integration
+
+Set `X402_GUARD_ENABLED=true` before API start. See `docs/integrations/x402-guard.md`.
+
+```powershell
+cd ..\x402-guard; npm run build
+cd ..\coinbase
+$env:X402_GUARD_ENABLED = "true"
+bun run dev:api
+```
+
+## Remotes
+
+- `github` — https://github.com/prasanthkuna/railguard-cdp (this repo)
+- `encore` — Encore Cloud deploy target
+- `origin` — archived legacy `prasanthkuna/railguard`
