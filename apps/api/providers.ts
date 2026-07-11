@@ -9,6 +9,7 @@ import { baseSepolia } from "viem/chains"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
 import { BASE_SEPOLIA_CHAIN, buildDemoTransactionHash } from "../../packages/cdp/src"
 import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
+import { resolveCdpConfirmationDepth } from "./runtimeConfig"
 
 const workosApiKey = secret("WORKOS_API_KEY")
 const workosClientID = secret("WORKOS_CLIENT_ID")
@@ -36,7 +37,7 @@ export async function waitForTransferConfirmation(txHash: string) {
   })
   const receipt = await client.waitForTransactionReceipt({
     hash: txHash as `0x${string}`,
-    confirmations: 1,
+    confirmations: resolveCdpConfirmationDepth(),
   })
   if (receipt.status !== "success") {
     throw APIError.failedPrecondition(`transaction reverted on-chain: ${txHash}`)

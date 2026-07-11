@@ -20,3 +20,5 @@ export function resolvePaymentMode(): PaymentExecutionMode {
 export function assertPaymentModeConfigured(): void {
   resolvePaymentMode()
 }
+
+export { resolveCdpConfirmationDepth } from "./runtimeConfig"
