@@ -8,6 +8,8 @@ Invoice-to-USDC on Base Sepolia via Coinbase CDP — **enforcement boundary #3**
 
 > **Start here:** [railguard-new PORTFOLIO](https://github.com/prasanthkuna/railguard-new/blob/master/docs/PORTFOLIO.md) — **send only this link** in outreach. Tag: `v0.1-reference`.
 
+![Railguard stack — three boundaries](https://raw.githubusercontent.com/prasanthkuna/railguard-new/master/assets/x-campaign/diagram-boundaries.png)
+
 ## Sibling repos
 
 | Repo | Role |
