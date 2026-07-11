@@ -1,6 +1,6 @@
+import type { GuardDecision } from "@x402-guard/core"
 import { parseResourceUrl } from "@x402-guard/core"
 import { X402Guard, defaultDevPolicy } from "@x402-guard/middleware"
-import type { GuardDecision } from "@x402-guard/core"
 import type { PaymentReceipt } from "@x402-guard/middleware"
 import { DbGuardStateStore } from "./x402GuardDbStore"
 
@@ -48,9 +48,7 @@ export interface PaymentGuardResult {
   receipt?: PaymentReceipt
 }
 
-export async function evaluatePaymentGuard(
-  input: PaymentGuardInput,
-): Promise<PaymentGuardResult> {
+export async function evaluatePaymentGuard(input: PaymentGuardInput): Promise<PaymentGuardResult> {
   const guard = guardForOrganization(input.organizationID)
   const decision = await guard.evaluate({
     agentId: organizationAgentId(input.organizationID),

@@ -3,12 +3,6 @@ import { CronJob } from "encore.dev/cron"
 import { BASE_SEPOLIA_CHAIN } from "../../packages/cdp/src"
 import { db } from "./db"
 import { waitForTransferConfirmation } from "./providers"
-import {
-  commitPaymentGuardSpend,
-  isX402GuardEnabled,
-  recordPaymentSettlement,
-} from "./x402Guard"
-
 interface PaymentIntentRow {
   id: string
   organization_id: string

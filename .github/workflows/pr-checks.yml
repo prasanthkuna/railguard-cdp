@@ -16,6 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout x402-guard
+        uses: actions/checkout@v4
+        with:
+          repository: prasanthkuna/x402-guard
+          path: x402-guard
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -28,6 +34,12 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Build x402-guard packages
+        run: |
+          cd x402-guard/packages/core && bun run build
+          cd ../policy && bun run build
+          cd ../middleware && bun run build
 
       - name: Lint
         run: bun run lint

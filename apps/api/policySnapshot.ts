@@ -1,9 +1,12 @@
 import { createHash } from "node:crypto"
 import { stableStringify } from "../../packages/audit/src"
-import type { InvoiceRecord as Invoice } from "../../packages/db/src"
 import { BASE_SEPOLIA_CHAIN } from "../../packages/cdp/src"
+import type { InvoiceRecord as Invoice } from "../../packages/db/src"
+import type {
+  VendorRecord as Vendor,
+  VendorWalletRecord as VendorWallet,
+} from "../../packages/db/src"
 import { evaluateInvoicePolicy } from "../../packages/policy/src"
-import type { VendorRecord as Vendor, VendorWalletRecord as VendorWallet } from "../../packages/db/src"
 
 const DEFAULT_APPROVAL_THRESHOLD = "100000000"
 const DEFAULT_HARD_CAP = "1000000000"

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test"
 
-/** Serializes claims the way prepared → executing UPDATE does in Postgres. */
 async function claimPreparedStatus(
   getStatus: () => string,
   setStatus: (next: string) => void,
@@ -14,8 +13,24 @@ describe("payment execution claim serialization", () => {
   it("allows exactly one winner among 100 concurrent claimers", async () => {
     let status = "prepared"
     let lock = Promise.resolve()
-    const claim = () =>
-      (lock = lock.then(async () => claimPreparedStatus(() => status, (next) => { status = next })))
+    const claim = async () => {
+      const prior = lock
+      let release!: () => void
+      lock = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      await prior
+      try {
+        return await claimPreparedStatus(
+          () => status,
+          (next) => {
+            status = next
+          },
+        )
+      } finally {
+        release()
+      }
+    }
 
     const results = await Promise.all(Array.from({ length: 100 }, () => claim()))
     expect(results.filter(Boolean)).toHaveLength(1)

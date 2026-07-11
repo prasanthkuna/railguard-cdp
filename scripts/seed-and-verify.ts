@@ -101,9 +101,9 @@ const baseURL = stripTrailingSlash(
     env("NEXT_PUBLIC_API_URL", env("APP_BASE_URL", "http://localhost:4000")),
   ),
 )
-const mode = ((env("RAILGUARD_MODE", "curated").toLowerCase() as RunMode) === "stress"
-  ? "stress"
-  : "curated") as RunMode
+const mode = (
+  (env("RAILGUARD_MODE", "curated").toLowerCase() as RunMode) === "stress" ? "stress" : "curated"
+) as RunMode
 const runID = env(
   "RAILGUARD_RUN_ID",
   new Date()

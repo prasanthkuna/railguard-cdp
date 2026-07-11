@@ -36,6 +36,7 @@ import {
   invoiceDocumentsBucket,
   notificationRequestedTopic,
 } from "./infrastructure"
+import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
 import {
   createWorkOSOrganization,
   exchangeWorkOSCode,
@@ -59,10 +60,6 @@ import {
   recordPaymentSettlement,
   releasePaymentGuardAuthorization,
 } from "./x402Guard"
-import {
-  buildPolicySnapshotInput,
-  computePolicySnapshotHash,
-} from "./policySnapshot"
 
 interface PolicyRun {
   id: string
@@ -879,10 +876,7 @@ export const executePaymentIntent = api(
         SELECT * FROM payment_intents
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
       `
-      if (
-        current?.status === "executing" &&
-        current.execution_idempotency_key === idempotencyKey
-      ) {
+      if (current?.status === "executing" && current.execution_idempotency_key === idempotencyKey) {
         return { paymentIntent: mapPaymentIntent(current) }
       }
       throw APIError.failedPrecondition(
@@ -1654,7 +1648,9 @@ async function ensurePayable(invoice: Invoice, actor: SystemActor): Promise<void
     `
     if (!approval) throw APIError.failedPrecondition("payment requires approval")
     if (!approval.policy_snapshot_hash) {
-      throw APIError.failedPrecondition("approval is unbound; re-approve after policy snapshot upgrade")
+      throw APIError.failedPrecondition(
+        "approval is unbound; re-approve after policy snapshot upgrade",
+      )
     }
     if (approval.policy_snapshot_hash !== snapshotHash) {
       throw APIError.failedPrecondition(
@@ -1678,9 +1674,7 @@ async function assertExecutorDiffersFromApprover(
     LIMIT 1
   `
   if (approval?.approver_user_id === executorUserID) {
-    throw APIError.failedPrecondition(
-      "executor must differ from approver (separation of duties)",
-    )
+    throw APIError.failedPrecondition("executor must differ from approver (separation of duties)")
   }
 }
 

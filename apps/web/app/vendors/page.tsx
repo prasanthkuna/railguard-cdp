@@ -54,9 +54,7 @@ export default function VendorsPage() {
             <EmptyState
               title="No vendors found"
               description="Create your approved vendor registry before releasing payments."
-              action={
-                <Button onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>
-              }
+              action={<Button onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>}
             />
           </div>
         ) : (

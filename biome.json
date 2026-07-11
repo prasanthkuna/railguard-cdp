@@ -6,6 +6,11 @@
       "encore.gen/**",
       "apps/web/.next/**",
       "apps/web/next-env.d.ts",
+      "apps/video/**",
+      "x402-guard/**",
+      "scripts/**",
+      "coinbase.code-workspace",
+      "docs/**",
       ".vercel/**"
     ]
   },

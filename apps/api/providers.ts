@@ -4,11 +4,11 @@ import { WorkOS } from "@workos-inc/node"
 import { APIError } from "encore.dev/api"
 import { secret } from "encore.dev/config"
 import { createRemoteJWKSet, jwtVerify } from "jose"
+import { http, createPublicClient } from "viem"
+import { baseSepolia } from "viem/chains"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
 import { BASE_SEPOLIA_CHAIN, buildDemoTransactionHash } from "../../packages/cdp/src"
-import { resolvePaymentMode, type PaymentExecutionMode } from "./config"
-import { createPublicClient, http } from "viem"
-import { baseSepolia } from "viem/chains"
+import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
 
 const workosApiKey = secret("WORKOS_API_KEY")
 const workosClientID = secret("WORKOS_CLIENT_ID")

@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+x402-guard/
 
 # build outputs
 .next/
@@ -42,3 +43,4 @@ encore.gen.cue
 !/encore.gen/package.json
 
 .vercel
+/encore.gen

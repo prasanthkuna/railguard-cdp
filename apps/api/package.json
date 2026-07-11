@@ -7,9 +7,9 @@
     "node": "20"
   },
   "dependencies": {
-    "@x402-guard/core": "file:../../../x402-guard/packages/core",
-    "@x402-guard/middleware": "file:../../../x402-guard/packages/middleware",
-    "@x402-guard/policy": "file:../../../x402-guard/packages/policy"
+    "@x402-guard/core": "file:../../x402-guard/packages/core",
+    "@x402-guard/middleware": "file:../../x402-guard/packages/middleware",
+    "@x402-guard/policy": "file:../../x402-guard/packages/policy"
   },
   "scripts": {
     "dev": "encore run",
