@@ -57,7 +57,12 @@ import {
   evaluatePaymentGuard,
   isX402GuardEnabled,
   recordPaymentSettlement,
+  releasePaymentGuardAuthorization,
 } from "./x402Guard"
+import {
+  buildPolicySnapshotInput,
+  computePolicySnapshotHash,
+} from "./policySnapshot"
 
 interface PolicyRun {
   id: string
@@ -656,16 +661,19 @@ export const decideApproval = api(
     const invoice = await findInvoice(actor.organizationID, params.invoiceID)
     if (!invoice) throw APIError.notFound("invoice not found")
 
-    const policyRun = await db.queryRow<{ id: string }>`
-      SELECT id FROM policy_runs
-      WHERE organization_id = ${actor.organizationID} AND invoice_id = ${invoice.id}
-      ORDER BY created_at DESC
-      LIMIT 1
-    `
+    const snapshotInput = await loadPolicySnapshotForInvoice(invoice, actor.organizationID)
+    const policySnapshotHash = computePolicySnapshotHash(snapshotInput)
+    const policyRun = await runPolicy(invoice, userActor(actor), true)
 
     await db.exec`
-      INSERT INTO approvals (id, organization_id, invoice_id, required_role, approver_user_id, decision, reason, policy_run_id)
-      VALUES (${id("apr")}, ${actor.organizationID}, ${invoice.id}, 'approver', ${actor.userID}, ${params.decision}, ${params.reason ?? null}, ${policyRun?.id ?? null})
+      INSERT INTO approvals (
+        id, organization_id, invoice_id, required_role, approver_user_id, decision, reason,
+        policy_run_id, policy_snapshot_hash
+      )
+      VALUES (
+        ${id("apr")}, ${actor.organizationID}, ${invoice.id}, 'approver', ${actor.userID},
+        ${params.decision}, ${params.reason ?? null}, ${policyRun.id}, ${policySnapshotHash}
+      )
     `
 
     const nextStatus: InvoiceStatus = params.decision === "approved" ? "approved" : "rejected"
@@ -808,6 +816,7 @@ export const executePaymentIntent = api(
     await assertExecutorDiffersFromApprover(actor.organizationID, actor.userID, invoice.id)
 
     let guardReceiptId: string | undefined
+    let guardAuthorizationId: string | undefined
     let guardInput:
       | {
           organizationID: string
@@ -832,6 +841,7 @@ export const executePaymentIntent = api(
       }
       const guardResult = await evaluatePaymentGuard(guardInput)
       guardReceiptId = guardResult.decision.receiptId
+      guardAuthorizationId = guardResult.decision.authorizationId
       await appendAudit(
         actor.organizationID,
         "payment_intent",
@@ -880,6 +890,7 @@ export const executePaymentIntent = api(
       )
     }
 
+    let broadcastedTxHash: string | undefined
     try {
       const execution = await executeCdpTransfer({
         organizationID: actor.organizationID,
@@ -889,6 +900,7 @@ export const executePaymentIntent = api(
         paymentIntentId: params.id,
         idempotencyKey,
       })
+      broadcastedTxHash = execution.txHash
 
       await db.exec`
         UPDATE payment_intents
@@ -898,6 +910,10 @@ export const executePaymentIntent = api(
 
       if (execution.mode === "live") {
         await waitForTransferConfirmation(execution.txHash)
+      }
+
+      if (isX402GuardEnabled() && guardInput && guardReceiptId) {
+        await commitPaymentGuardSpend(guardInput, guardReceiptId)
       }
 
       const row = await db.queryRow<PaymentIntentRow>`
@@ -945,9 +961,6 @@ export const executePaymentIntent = api(
             userActor(actor),
           )
         }
-        if (guardInput) {
-          await commitPaymentGuardSpend(guardInput)
-        }
       }
       await appendAudit(
         actor.organizationID,
@@ -964,24 +977,54 @@ export const executePaymentIntent = api(
       return { paymentIntent }
     } catch (error) {
       const message = error instanceof Error ? error.message : "payment execution failed"
-      const terminalStatus = /cdp transfer failed|timeout|network/i.test(message)
-        ? "unknown"
-        : "failed"
+      if (broadcastedTxHash) {
+        await db.exec`
+          UPDATE payment_intents
+          SET
+            status = 'unknown',
+            tx_hash = ${broadcastedTxHash},
+            failure_reason = ${message},
+            execution_idempotency_key = ${idempotencyKey}
+          WHERE organization_id = ${actor.organizationID}
+            AND id = ${params.id}
+            AND status IN ('executing', 'submitted')
+        `
+        if (guardAuthorizationId) {
+          await releasePaymentGuardAuthorization(actor.organizationID, guardAuthorizationId)
+        }
+        await appendAudit(
+          actor.organizationID,
+          "payment_intent",
+          params.id,
+          "payment_intent.unknown",
+          {
+            reason: message,
+            txHash: broadcastedTxHash,
+          },
+          userActor(actor),
+        )
+        throw APIError.failedPrecondition(
+          "payment broadcast succeeded but post-broadcast steps failed; reconciliation required",
+        )
+      }
+      if (guardAuthorizationId) {
+        await releasePaymentGuardAuthorization(actor.organizationID, guardAuthorizationId)
+      }
       await db.exec`
         UPDATE payment_intents
         SET
-          status = ${terminalStatus},
+          status = 'failed',
           failure_reason = ${message},
           execution_idempotency_key = ${idempotencyKey}
         WHERE organization_id = ${actor.organizationID}
           AND id = ${params.id}
-          AND status IN ('executing', 'submitted')
+          AND status = 'executing'
       `
       await appendAudit(
         actor.organizationID,
         "payment_intent",
         params.id,
-        terminalStatus === "unknown" ? "payment_intent.unknown" : "payment_intent.failed",
+        "payment_intent.failed",
         {
           reason: message,
         },
@@ -1564,14 +1607,45 @@ async function runPolicy(
   return policyRun
 }
 
+async function loadPolicySnapshotForInvoice(
+  invoice: Invoice,
+  organizationID: string,
+): Promise<ReturnType<typeof buildPolicySnapshotInput>> {
+  const vendor = await mustFindVendor(organizationID, invoice.vendorID)
+  const wallets = await listVendorWallets(organizationID, invoice.vendorID)
+  const approvedWallets = wallets.filter((wallet) => wallet.status === "approved")
+  const duplicate = await findDuplicateInvoice(organizationID, invoice)
+  const workspace = await loadOrganization(organizationID)
+  const vendorAverageBaseUnits = await vendorAverage(organizationID, invoice.vendorID, invoice.id)
+  return buildPolicySnapshotInput(
+    invoice,
+    vendor,
+    approvedWallets,
+    duplicate?.id,
+    vendorAverageBaseUnits,
+    workspace
+      ? {
+          allowedToken: workspace.allowedToken,
+          allowedChain: workspace.allowedChain,
+          approvalThresholdBaseUnits: workspace.approvalThresholdBaseUnits,
+          hardCapBaseUnits: workspace.hardCapBaseUnits,
+          amountReviewMultiplier: workspace.amountReviewMultiplier,
+          walletRiskThreshold: workspace.walletRiskThreshold,
+        }
+      : undefined,
+  )
+}
+
 async function ensurePayable(invoice: Invoice, actor: SystemActor): Promise<void> {
-  const policyRun = await runPolicy(invoice, actor, true)
+  const snapshotInput = await loadPolicySnapshotForInvoice(invoice, actor.organizationID)
+  const snapshotHash = computePolicySnapshotHash(snapshotInput)
+  const policyRun = await runPolicy(invoice, actor, false)
   if (policyRun.result === "block") {
     throw APIError.failedPrecondition("payment blocked by policy")
   }
   if (policyRun.result === "escalate") {
-    const approval = await db.queryRow<{ id: string; policy_run_id: string | null }>`
-      SELECT id, policy_run_id FROM approvals
+    const approval = await db.queryRow<{ policy_snapshot_hash: string | null }>`
+      SELECT policy_snapshot_hash FROM approvals
       WHERE organization_id = ${actor.organizationID}
         AND invoice_id = ${invoice.id}
         AND decision = 'approved'
@@ -1579,9 +1653,12 @@ async function ensurePayable(invoice: Invoice, actor: SystemActor): Promise<void
       LIMIT 1
     `
     if (!approval) throw APIError.failedPrecondition("payment requires approval")
-    if (approval.policy_run_id && approval.policy_run_id !== policyRun.id) {
+    if (!approval.policy_snapshot_hash) {
+      throw APIError.failedPrecondition("approval is unbound; re-approve after policy snapshot upgrade")
+    }
+    if (approval.policy_snapshot_hash !== snapshotHash) {
       throw APIError.failedPrecondition(
-        "approval is stale relative to the latest policy evaluation; re-approve after policy re-run",
+        "approval is stale relative to the current invoice policy snapshot; re-approve",
       )
     }
   }
@@ -1775,52 +1852,59 @@ async function appendAudit(
   event: Record<string, unknown>,
   actor: SystemActor,
 ): Promise<void> {
-  await db.exec`SELECT pg_advisory_xact_lock(hashtext(${organizationID}))`
+  const tx = await db.begin()
+  try {
+    await tx.exec`SELECT pg_advisory_xact_lock(hashtext(${organizationID}))`
 
-  const head = await db.queryRow<{ head_event_hash: string }>`
-    SELECT head_event_hash FROM audit_chain_heads
-    WHERE organization_id = ${organizationID}
-    FOR UPDATE
-  `
-  const previous = head?.head_event_hash
-    ? { event_hash: head.head_event_hash }
-    : await db.queryRow<{ event_hash: string }>`
-        SELECT event_hash FROM audit_events
-        WHERE organization_id = ${organizationID}
-        ORDER BY created_at DESC, id DESC
-        LIMIT 1
-      `
+    const head = await tx.queryRow<{ head_event_hash: string }>`
+      SELECT head_event_hash FROM audit_chain_heads
+      WHERE organization_id = ${organizationID}
+      FOR UPDATE
+    `
+    const previous = head?.head_event_hash
+      ? { event_hash: head.head_event_hash }
+      : await tx.queryRow<{ event_hash: string }>`
+          SELECT event_hash FROM audit_events
+          WHERE organization_id = ${organizationID}
+          ORDER BY created_at DESC, id DESC
+          LIMIT 1
+        `
 
-  const auditID = id("aud")
-  const previousHash = previous?.event_hash ?? null
-  const eventHash = buildAuditHash({
-    eventID: auditID,
-    entityType,
-    entityID,
-    eventType,
-    event,
-    previousHash,
-  })
+    const auditID = id("aud")
+    const previousHash = previous?.event_hash ?? null
+    const eventHash = buildAuditHash({
+      eventID: auditID,
+      entityType,
+      entityID,
+      eventType,
+      event,
+      previousHash,
+    })
 
-  await db.exec`
-    INSERT INTO audit_events (
-      id, organization_id, entity_type, entity_id, actor_type, actor_id,
-      event_type, event_json, previous_hash, event_hash
-    )
-    VALUES (
-      ${auditID}, ${organizationID}, ${entityType}, ${entityID}, ${actor.actorType},
-      ${actor.actorID}, ${eventType}, ${JSON.stringify(event)}, ${previousHash}, ${eventHash}
-    )
-  `
+    await tx.exec`
+      INSERT INTO audit_events (
+        id, organization_id, entity_type, entity_id, actor_type, actor_id,
+        event_type, event_json, previous_hash, event_hash
+      )
+      VALUES (
+        ${auditID}, ${organizationID}, ${entityType}, ${entityID}, ${actor.actorType},
+        ${actor.actorID}, ${eventType}, ${JSON.stringify(event)}, ${previousHash}, ${eventHash}
+      )
+    `
 
-  await db.exec`
-    INSERT INTO audit_chain_heads (organization_id, head_event_id, head_event_hash, updated_at)
-    VALUES (${organizationID}, ${auditID}, ${eventHash}, now())
-    ON CONFLICT (organization_id) DO UPDATE
-    SET head_event_id = EXCLUDED.head_event_id,
-        head_event_hash = EXCLUDED.head_event_hash,
-        updated_at = now()
-  `
+    await tx.exec`
+      INSERT INTO audit_chain_heads (organization_id, head_event_id, head_event_hash, updated_at)
+      VALUES (${organizationID}, ${auditID}, ${eventHash}, now())
+      ON CONFLICT (organization_id) DO UPDATE
+      SET head_event_id = EXCLUDED.head_event_id,
+          head_event_hash = EXCLUDED.head_event_hash,
+          updated_at = now()
+    `
+    await tx.commit()
+  } catch (error) {
+    await tx.rollback()
+    throw error
+  }
 }
 
 async function auditTrail(

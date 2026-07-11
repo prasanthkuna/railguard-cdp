@@ -20,7 +20,11 @@ function guardForOrganization(organizationID: string): X402Guard {
   let guard = guards.get(organizationID)
   if (!guard) {
     guard = new X402Guard({
-      policy: defaultDevPolicy(organizationAgentId(organizationID)),
+      policy: {
+        ...defaultDevPolicy(organizationAgentId(organizationID)),
+        allowedAssets: ["USDC"],
+        allowedNetworks: ["base-sepolia", "eip155:84532"],
+      },
       policyVersion: "railguard-cdp-v0.1.0",
       stateStore: isX402GuardEnabled() ? durableStore : undefined,
     })
@@ -69,17 +73,30 @@ export function recordPaymentSettlement(
   return guardForOrganization(organizationID).recordSettlement(receiptId, txHash)
 }
 
-/** Records durable spend after CDP execution succeeds (M-08). */
-export async function commitPaymentGuardSpend(input: PaymentGuardInput): Promise<void> {
+/** Records durable spend after CDP execution succeeds (C-02 / H-12). */
+export async function commitPaymentGuardSpend(
+  input: PaymentGuardInput,
+  receiptId: string,
+): Promise<void> {
   const guard = guardForOrganization(input.organizationID)
-  await guard.commitAllowedSpend({
-    agentId: organizationAgentId(input.organizationID),
-    payer: input.payer,
-    payTo: input.payTo,
-    amountAtomic: BigInt(input.amountBaseUnits),
-    asset: "USDC",
-    network: input.chain,
-    resource: parseResourceUrl(input.resourceUrl),
-    idempotencyKey: input.idempotencyKey,
-  })
+  await guard.commitAllowedSpend(
+    {
+      agentId: organizationAgentId(input.organizationID),
+      payer: input.payer,
+      payTo: input.payTo,
+      amountAtomic: BigInt(input.amountBaseUnits),
+      asset: "USDC",
+      network: input.chain,
+      resource: parseResourceUrl(input.resourceUrl),
+      idempotencyKey: input.idempotencyKey,
+    },
+    receiptId,
+  )
+}
+
+export async function releasePaymentGuardAuthorization(
+  organizationID: string,
+  authorizationId: string,
+): Promise<void> {
+  await guardForOrganization(organizationID).releaseAuthorization(authorizationId)
 }

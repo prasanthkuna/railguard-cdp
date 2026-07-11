@@ -29,15 +29,19 @@ const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 
 export type { PaymentExecutionMode } from "./config"
 
-export async function waitForTransferConfirmation(txHash: string): Promise<void> {
+export async function waitForTransferConfirmation(txHash: string) {
   const client = createPublicClient({
     chain: baseSepolia,
     transport: http(),
   })
-  await client.waitForTransactionReceipt({
+  const receipt = await client.waitForTransactionReceipt({
     hash: txHash as `0x${string}`,
     confirmations: 1,
   })
+  if (receipt.status !== "success") {
+    throw APIError.failedPrecondition(`transaction reverted on-chain: ${txHash}`)
+  }
+  return receipt
 }
 
 function hasLiveCdpCredentials(): boolean {
