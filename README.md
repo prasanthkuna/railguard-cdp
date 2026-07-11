@@ -1,8 +1,12 @@
 # Railguard CDP
 
-Invoice-to-USDC on Base Sepolia via Coinbase CDP — **enforcement boundary #3** (human approvals, broadcast truth, reconciliation).
+[![v0.1-reference](https://img.shields.io/badge/release-v0.1--reference-blue)](https://github.com/prasanthkuna/railguard-cdp/releases/tag/v0.1-reference)
+[![tests](https://img.shields.io/badge/API%20tests-bun%20passing-green)](./apps/api/payment-state.test.ts)
+[![status](https://img.shields.io/badge/status-reference%20implementation-lightgrey)](https://github.com/prasanthkuna/railguard-new/blob/master/docs/RELEASE_v0.1-reference.md)
 
-> **Railguard stack:** [railguard-new PORTFOLIO](https://github.com/prasanthkuna/railguard-new/blob/master/docs/PORTFOLIO.md) — one-page story, source-of-truth table, demo scripts.
+Invoice-to-USDC on Base Sepolia via Coinbase CDP — **enforcement boundary #3**.
+
+> **Start here:** [railguard-new PORTFOLIO](https://github.com/prasanthkuna/railguard-new/blob/master/docs/PORTFOLIO.md) — **send only this link** in outreach. Tag: `v0.1-reference`.
 
 ## Sibling repos
 
