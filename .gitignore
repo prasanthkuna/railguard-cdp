@@ -44,3 +44,16 @@ encore.gen.cue
 
 .vercel
 /encore.gen
+
+# Private — interview prep, product PRDs, video production (local only)
+docs/private/
+apps/video/
+notes/
+*.local.md
+*.code-workspace
+scripts/capture-*.ts
+scripts/extract-*.ts
+scripts/finalize-*.ts
+scripts/generate-campaign-assets.ts
+scripts/render-*.ps1
+scripts/save-shot.ts
