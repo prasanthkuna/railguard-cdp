@@ -46,6 +46,7 @@ import {
   getWorkOSAuthorizationURL,
   hasWorkOSConfig,
   rejectIfUnsafeDocument,
+  resolveCdpPayerAddress,
   sendNotification,
   sha256Buffer,
   verifyWorkOSWebhook,
@@ -752,12 +753,12 @@ export const executePaymentIntent = api(
   },
   async (params: ExecutePaymentIntentRequest): Promise<{ paymentIntent: PaymentIntent }> => {
     const actor = await requireActor(["owner", "finance"])
-    ensureIdempotencyKey(params.idempotencyKey)
+    const idempotencyKey = ensureIdempotencyKey(params.idempotencyKey)
 
     const idempotentExecution = await db.queryRow<PaymentIntentRow>`
       SELECT * FROM payment_intents
       WHERE organization_id = ${actor.organizationID}
-        AND execution_idempotency_key = ${params.idempotencyKey}
+        AND execution_idempotency_key = ${idempotencyKey}
     `
     if (idempotentExecution) {
       if (idempotentExecution.id !== params.id) {
@@ -765,7 +766,14 @@ export const executePaymentIntent = api(
           "execution idempotency key is already used for a different payment intent",
         )
       }
-      return { paymentIntent: mapPaymentIntent(idempotentExecution) }
+      if (
+        idempotentExecution.status === "executed" ||
+        idempotentExecution.status === "executing" ||
+        idempotentExecution.status === "submitted" ||
+        idempotentExecution.status === "unknown"
+      ) {
+        return { paymentIntent: mapPaymentIntent(idempotentExecution) }
+      }
     }
 
     const existing = await db.queryRow<PaymentIntentRow>`
@@ -779,40 +787,29 @@ export const executePaymentIntent = api(
         "payment intent execution previously failed; create a new intent before retrying",
       )
     }
-
-    const claimed = await db.queryRow<PaymentIntentRow>`
-      UPDATE payment_intents
-      SET execution_idempotency_key = COALESCE(execution_idempotency_key, ${params.idempotencyKey})
-      WHERE organization_id = ${actor.organizationID}
-        AND id = ${params.id}
-        AND status = 'prepared'
-        AND (
-          execution_idempotency_key IS NULL
-          OR execution_idempotency_key = ${params.idempotencyKey}
-        )
-      RETURNING *
-    `
-    if (!claimed) {
+    if (existing.status === "unknown" || existing.status === "submitted") {
       throw APIError.failedPrecondition(
-        "payment intent is already being executed with a different idempotency key",
+        "payment intent requires reconciliation before retrying execution",
       )
     }
 
-    const invoice = await findInvoice(actor.organizationID, claimed.invoice_id)
+    const invoice = await findInvoice(actor.organizationID, existing.invoice_id)
     if (!invoice) throw APIError.notFound("invoice not found")
     await ensurePayable(invoice, userActor(actor))
 
+    let guardReceiptId: string | undefined
     if (isX402GuardEnabled()) {
+      const payerAddress = await resolveCdpPayerAddress(actor.organizationID)
       const guardResult = await evaluatePaymentGuard({
         organizationID: actor.organizationID,
-        agentId: actor.userID,
-        payer: invoice.walletAddress ?? "0x0000000000000000000000000000000000000000",
-        payTo: claimed.recipient_address,
-        amountBaseUnits: claimed.amount_base_units,
-        chain: claimed.chain,
+        payer: payerAddress,
+        payTo: existing.recipient_address,
+        amountBaseUnits: existing.amount_base_units,
+        chain: existing.chain,
         resourceUrl: `https://railguard.local/payment-intents/${params.id}`,
-        idempotencyKey: params.idempotencyKey,
+        idempotencyKey,
       })
+      guardReceiptId = guardResult.decision.receiptId
       await appendAudit(
         actor.organizationID,
         "payment_intent",
@@ -832,13 +829,48 @@ export const executePaymentIntent = api(
       }
     }
 
+    const claimed = await db.queryRow<PaymentIntentRow>`
+      UPDATE payment_intents
+      SET
+        status = 'executing',
+        execution_idempotency_key = ${idempotencyKey}
+      WHERE organization_id = ${actor.organizationID}
+        AND id = ${params.id}
+        AND status = 'prepared'
+      RETURNING *
+    `
+    if (!claimed) {
+      const current = await db.queryRow<PaymentIntentRow>`
+        SELECT * FROM payment_intents
+        WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
+      `
+      if (
+        current?.status === "executing" &&
+        current.execution_idempotency_key === idempotencyKey
+      ) {
+        return { paymentIntent: mapPaymentIntent(current) }
+      }
+      throw APIError.failedPrecondition(
+        "payment intent is already being executed or is not in a prepared state",
+      )
+    }
+
     try {
       const execution = await executeCdpTransfer({
         organizationID: actor.organizationID,
         recipientAddress: claimed.recipient_address,
         amountBaseUnits: claimed.amount_base_units,
         chain: claimed.chain,
+        paymentIntentId: params.id,
+        idempotencyKey,
       })
+
+      await db.exec`
+        UPDATE payment_intents
+        SET status = 'submitted', tx_hash = ${execution.txHash}
+        WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
+      `
+
       const row = await db.queryRow<PaymentIntentRow>`
         UPDATE payment_intents
         SET
@@ -846,7 +878,7 @@ export const executePaymentIntent = api(
           tx_hash = ${execution.txHash},
           executed_at = now(),
           failure_reason = null,
-          execution_idempotency_key = ${params.idempotencyKey}
+          execution_idempotency_key = ${idempotencyKey}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
         RETURNING *
       `
@@ -863,8 +895,12 @@ export const executePaymentIntent = api(
         },
         userActor(actor),
       )
-      if (isX402GuardEnabled()) {
-        const settled = recordPaymentSettlement(actor.organizationID, execution.txHash)
+      if (isX402GuardEnabled() && guardReceiptId) {
+        const settled = recordPaymentSettlement(
+          actor.organizationID,
+          guardReceiptId,
+          execution.txHash,
+        )
         if (settled) {
           await appendAudit(
             actor.organizationID,
@@ -895,19 +931,24 @@ export const executePaymentIntent = api(
       return { paymentIntent }
     } catch (error) {
       const message = error instanceof Error ? error.message : "payment execution failed"
+      const terminalStatus = /cdp transfer failed|timeout|network/i.test(message)
+        ? "unknown"
+        : "failed"
       await db.exec`
         UPDATE payment_intents
         SET
-          status = 'failed',
+          status = ${terminalStatus},
           failure_reason = ${message},
-          execution_idempotency_key = ${params.idempotencyKey}
-        WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
+          execution_idempotency_key = ${idempotencyKey}
+        WHERE organization_id = ${actor.organizationID}
+          AND id = ${params.id}
+          AND status IN ('executing', 'submitted')
       `
       await appendAudit(
         actor.organizationID,
         "payment_intent",
         params.id,
-        "payment_intent.failed",
+        terminalStatus === "unknown" ? "payment_intent.unknown" : "payment_intent.failed",
         {
           reason: message,
         },

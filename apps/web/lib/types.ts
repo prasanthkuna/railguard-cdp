@@ -8,7 +8,13 @@ export type InvoiceStatus =
   | "rejected"
   | "payment_intent_created"
   | "executed"
-export type PaymentIntentStatus = "prepared" | "executed" | "failed"
+export type PaymentIntentStatus =
+  | "prepared"
+  | "executing"
+  | "submitted"
+  | "unknown"
+  | "executed"
+  | "failed"
 export type PolicyResult = "allow" | "escalate" | "block"
 
 export interface OrganizationRecord {

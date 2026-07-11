@@ -24,6 +24,40 @@ const slackWebhookURL = secret("SLACK_WEBHOOK_URL")
 const workosIssuer = process.env.WORKOS_ISSUER?.trim() || "https://api.workos.com"
 const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 
+export type PaymentExecutionMode = "demo" | "live"
+
+export function resolvePaymentMode(): PaymentExecutionMode {
+  const mode = (process.env.PAYMENT_MODE ?? "demo").toLowerCase()
+  if (mode !== "demo" && mode !== "live") {
+    throw APIError.failedPrecondition("PAYMENT_MODE must be demo or live")
+  }
+  return mode
+}
+
+function hasLiveCdpCredentials(): boolean {
+  const apiKeyID = cdpApiKeyID() || cdpApiKeyName()
+  const apiKeySecret = cdpApiKeySecret() || cdpPrivateKey()
+  return Boolean(apiKeyID && apiKeySecret && cdpWalletSecret())
+}
+
+export async function resolveCdpPayerAddress(organizationID: string): Promise<string> {
+  if (resolvePaymentMode() === "demo") {
+    return `0x${"11".repeat(20)}`
+  }
+  if (!hasLiveCdpCredentials()) {
+    throw APIError.failedPrecondition("PAYMENT_MODE=live requires CDP credentials")
+  }
+  const cdp = new CdpClient({
+    apiKeyId: cdpApiKeyID() || cdpApiKeyName(),
+    apiKeySecret: cdpApiKeySecret() || cdpPrivateKey(),
+    walletSecret: cdpWalletSecret(),
+  })
+  const account = await cdp.evm.getOrCreateAccount({
+    name: `railguard-${safeIdentifier(organizationID)}`,
+  })
+  return account.address
+}
+
 type JsonObject = Record<string, unknown>
 
 export interface VerifiedWorkOSToken {
@@ -344,22 +378,36 @@ export async function executeCdpTransfer(input: {
   recipientAddress: string
   amountBaseUnits: string
   chain: string
+  paymentIntentId: string
+  idempotencyKey: string
 }): Promise<CdpExecutionResult> {
-  const apiKeyID = cdpApiKeyID() || cdpApiKeyName()
-  const apiKeySecret = cdpApiKeySecret() || cdpPrivateKey()
+  const mode = resolvePaymentMode()
+  const demoSeed = [
+    input.organizationID,
+    input.paymentIntentId,
+    input.idempotencyKey,
+    input.recipientAddress,
+    input.amountBaseUnits,
+    input.chain,
+  ].join(":")
 
-  if (!apiKeyID || !apiKeySecret || !cdpWalletSecret()) {
+  if (mode === "demo") {
     return {
-      txHash: buildDemoTransactionHash(
-        `${input.organizationID}:${input.recipientAddress}:${input.amountBaseUnits}`,
-      ),
+      txHash: buildDemoTransactionHash(demoSeed),
       mode: "demo",
     }
+  }
+
+  if (!hasLiveCdpCredentials()) {
+    throw APIError.failedPrecondition("PAYMENT_MODE=live requires CDP credentials")
   }
 
   if (input.chain !== BASE_SEPOLIA_CHAIN) {
     throw APIError.failedPrecondition("live CDP execution is only configured for base-sepolia")
   }
+
+  const apiKeyID = cdpApiKeyID() || cdpApiKeyName()
+  const apiKeySecret = cdpApiKeySecret() || cdpPrivateKey()
 
   try {
     const cdp = new CdpClient({
@@ -384,15 +432,6 @@ export async function executeCdpTransfer(input: {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    // Keep demo flows unblocked when staging credentials are present but malformed.
-    if (/Invalid key format|apiKey|wallet/i.test(message)) {
-      return {
-        txHash: buildDemoTransactionHash(
-          `${input.organizationID}:${input.recipientAddress}:${input.amountBaseUnits}`,
-        ),
-        mode: "demo",
-      }
-    }
     throw APIError.failedPrecondition(`cdp transfer failed: ${message}`)
   }
 }

@@ -9,11 +9,16 @@ export function isX402GuardEnabled(): boolean {
   return process.env.X402_GUARD_ENABLED === "true"
 }
 
+/** Org-scoped agent identity for finance-triggered CDP execution. */
+export function organizationAgentId(organizationID: string): string {
+  return `org:${organizationID}`
+}
+
 function guardForOrganization(organizationID: string): X402Guard {
   let guard = guards.get(organizationID)
   if (!guard) {
     guard = new X402Guard({
-      policy: defaultDevPolicy(`org:${organizationID}`),
+      policy: defaultDevPolicy(organizationAgentId(organizationID)),
       policyVersion: "railguard-cdp-v0.1.0",
     })
     guards.set(organizationID, guard)
@@ -23,7 +28,6 @@ function guardForOrganization(organizationID: string): X402Guard {
 
 export interface PaymentGuardInput {
   organizationID: string
-  agentId: string
   payer: string
   payTo: string
   amountBaseUnits: string
@@ -42,7 +46,7 @@ export async function evaluatePaymentGuard(
 ): Promise<PaymentGuardResult> {
   const guard = guardForOrganization(input.organizationID)
   const decision = await guard.evaluate({
-    agentId: input.agentId,
+    agentId: organizationAgentId(input.organizationID),
     payer: input.payer,
     payTo: input.payTo,
     amountAtomic: BigInt(input.amountBaseUnits),
@@ -56,7 +60,8 @@ export async function evaluatePaymentGuard(
 
 export function recordPaymentSettlement(
   organizationID: string,
+  receiptId: string,
   txHash: string,
 ): PaymentReceipt | undefined {
-  return guardForOrganization(organizationID).recordSettlement(txHash)
+  return guardForOrganization(organizationID).recordSettlement(receiptId, txHash)
 }
