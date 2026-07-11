@@ -6,6 +6,7 @@ import { secret } from "encore.dev/config"
 import { createRemoteJWKSet, jwtVerify } from "jose"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
 import { BASE_SEPOLIA_CHAIN, buildDemoTransactionHash } from "../../packages/cdp/src"
+import { PAYMENT_MODE } from "./config"
 
 const workosApiKey = secret("WORKOS_API_KEY")
 const workosClientID = secret("WORKOS_CLIENT_ID")
@@ -27,11 +28,7 @@ const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 export type PaymentExecutionMode = "demo" | "live"
 
 export function resolvePaymentMode(): PaymentExecutionMode {
-  const mode = (process.env.PAYMENT_MODE ?? "demo").toLowerCase()
-  if (mode !== "demo" && mode !== "live") {
-    throw APIError.failedPrecondition("PAYMENT_MODE must be demo or live")
-  }
-  return mode
+  return PAYMENT_MODE
 }
 
 function hasLiveCdpCredentials(): boolean {

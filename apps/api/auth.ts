@@ -23,14 +23,15 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
   if (hasWorkOSConfig() && token.split(".").length === 3) {
     try {
       const verified = await verifyWorkOSAccessToken(token)
-      const organizationID = verified.organizationID ?? params.organizationID?.trim()
-      if (!organizationID) {
-        throw APIError.unauthenticated("missing WorkOS organization context")
+      if (!verified.organizationID) {
+        throw APIError.unauthenticated(
+          "WorkOS token must include organization context; tenant headers are not accepted",
+        )
       }
 
       return {
         userID: verified.userID,
-        organizationID,
+        organizationID: verified.organizationID,
         role: verified.role,
         email: params.email?.trim(),
       }

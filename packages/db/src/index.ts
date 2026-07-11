@@ -12,6 +12,8 @@ export type PaymentIntentStatus =
   | "prepared"
   | "executing"
   | "submitted"
+  | "confirmed"
+  | "reverted"
   | "unknown"
   | "executed"
   | "failed"

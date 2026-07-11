@@ -829,11 +829,14 @@ export const executePaymentIntent = api(
       }
     }
 
+    const executionId = id("exec")
+
     const claimed = await db.queryRow<PaymentIntentRow>`
       UPDATE payment_intents
       SET
         status = 'executing',
-        execution_idempotency_key = ${idempotencyKey}
+        execution_idempotency_key = ${idempotencyKey},
+        execution_id = ${executionId}
       WHERE organization_id = ${actor.organizationID}
         AND id = ${params.id}
         AND status = 'prepared'
@@ -874,9 +877,10 @@ export const executePaymentIntent = api(
       const row = await db.queryRow<PaymentIntentRow>`
         UPDATE payment_intents
         SET
-          status = 'executed',
+          status = 'confirmed',
           tx_hash = ${execution.txHash},
           executed_at = now(),
+          confirmed_at = now(),
           failure_reason = null,
           execution_idempotency_key = ${idempotencyKey}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
@@ -1717,12 +1721,22 @@ async function appendAudit(
   event: Record<string, unknown>,
   actor: SystemActor,
 ): Promise<void> {
-  const previous = await db.queryRow<{ event_hash: string }>`
-    SELECT event_hash FROM audit_events
+  await db.exec`SELECT pg_advisory_xact_lock(hashtext(${organizationID}))`
+
+  const head = await db.queryRow<{ head_event_hash: string }>`
+    SELECT head_event_hash FROM audit_chain_heads
     WHERE organization_id = ${organizationID}
-    ORDER BY created_at DESC, id DESC
-    LIMIT 1
+    FOR UPDATE
   `
+  const previous = head?.head_event_hash
+    ? { event_hash: head.head_event_hash }
+    : await db.queryRow<{ event_hash: string }>`
+        SELECT event_hash FROM audit_events
+        WHERE organization_id = ${organizationID}
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      `
+
   const auditID = id("aud")
   const previousHash = previous?.event_hash ?? null
   const eventHash = buildAuditHash({
@@ -1743,6 +1757,15 @@ async function appendAudit(
       ${auditID}, ${organizationID}, ${entityType}, ${entityID}, ${actor.actorType},
       ${actor.actorID}, ${eventType}, ${JSON.stringify(event)}, ${previousHash}, ${eventHash}
     )
+  `
+
+  await db.exec`
+    INSERT INTO audit_chain_heads (organization_id, head_event_id, head_event_hash, updated_at)
+    VALUES (${organizationID}, ${auditID}, ${eventHash}, now())
+    ON CONFLICT (organization_id) DO UPDATE
+    SET head_event_id = EXCLUDED.head_event_id,
+        head_event_hash = EXCLUDED.head_event_hash,
+        updated_at = now()
   `
 }
 
