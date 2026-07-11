@@ -6,6 +6,9 @@
   "engines": {
     "node": "20"
   },
+  "dependencies": {
+    "@x402-guard/middleware": "file:../../../x402-guard/packages/middleware"
+  },
   "scripts": {
     "dev": "encore run",
     "build": "encore check",

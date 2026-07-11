@@ -1,8 +1,8 @@
-import { randomUUID } from "crypto"
+import { randomUUID } from "node:crypto"
 import { APIError, type Query, api } from "encore.dev/api"
+import { getAuthData } from "encore.dev/internal/codegen/auth"
 import { Subscription } from "encore.dev/pubsub"
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
-import { getAuthData } from "encore.dev/internal/codegen/auth"
 import { buildAuditHash, stableStringify } from "../../packages/audit/src"
 import { type AppRole, type AuthenticatedActor, hasRequiredRole } from "../../packages/auth/src"
 import {
@@ -50,6 +50,11 @@ import {
   sha256Buffer,
   verifyWorkOSWebhook,
 } from "./providers"
+import {
+  evaluatePaymentGuard,
+  isX402GuardEnabled,
+  recordPaymentSettlement,
+} from "./x402Guard"
 
 interface PolicyRun {
   id: string
@@ -797,6 +802,36 @@ export const executePaymentIntent = api(
     if (!invoice) throw APIError.notFound("invoice not found")
     await ensurePayable(invoice, userActor(actor))
 
+    if (isX402GuardEnabled()) {
+      const guardResult = await evaluatePaymentGuard({
+        organizationID: actor.organizationID,
+        agentId: actor.userID,
+        payer: invoice.walletAddress ?? "0x0000000000000000000000000000000000000000",
+        payTo: claimed.recipient_address,
+        amountBaseUnits: claimed.amount_base_units,
+        chain: claimed.chain,
+        resourceUrl: `https://railguard.local/payment-intents/${params.id}`,
+        idempotencyKey: params.idempotencyKey,
+      })
+      await appendAudit(
+        actor.organizationID,
+        "payment_intent",
+        params.id,
+        "x402_guard.evaluated",
+        {
+          decision: guardResult.decision.decision,
+          blocked: guardResult.decision.blocked,
+          triggeredRules: guardResult.decision.triggeredRules,
+          receiptId: guardResult.decision.receiptId,
+          receiptHash: guardResult.receipt?.receiptHash,
+        },
+        userActor(actor),
+      )
+      if (guardResult.decision.blocked) {
+        throw APIError.failedPrecondition("payment blocked by x402-guard policy")
+      }
+    }
+
     try {
       const execution = await executeCdpTransfer({
         organizationID: actor.organizationID,
@@ -828,6 +863,23 @@ export const executePaymentIntent = api(
         },
         userActor(actor),
       )
+      if (isX402GuardEnabled()) {
+        const settled = recordPaymentSettlement(actor.organizationID, execution.txHash)
+        if (settled) {
+          await appendAudit(
+            actor.organizationID,
+            "payment_intent",
+            paymentIntent.id,
+            "x402_guard.settled",
+            {
+              receiptId: settled.receiptId,
+              receiptHash: settled.receiptHash,
+              txHash: execution.txHash,
+            },
+            userActor(actor),
+          )
+        }
+      }
       await appendAudit(
         actor.organizationID,
         "invoice",
