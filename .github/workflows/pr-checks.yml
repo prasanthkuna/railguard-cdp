@@ -47,6 +47,14 @@ jobs:
       - name: Unit tests
         run: bun run test
 
+      - name: Lifecycle adversarial tests
+        run: |
+          bun test apps/api/payment-state.test.ts \
+            apps/api/payment-lifecycle.test.ts \
+            apps/api/reconcile.test.ts \
+            apps/api/execution-claim.test.ts \
+            packages/settlement/src/index.test.ts
+
       - name: Encore typecheck
         run: bun run typecheck
 

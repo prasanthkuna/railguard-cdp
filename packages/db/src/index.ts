@@ -15,8 +15,17 @@ export type PaymentIntentStatus =
   | "confirmed"
   | "reverted"
   | "unknown"
+  | "reconciliation_required"
   | "executed"
   | "failed"
+
+export type GuardLifecycleStatus = "reserved" | "committed" | "released" | "frozen"
+
+export type SettlementLifecycleStatus =
+  | "pending"
+  | "confirmed"
+  | "reverted"
+  | "reconciliation_required"
 export type ExtractionStatus = "queued" | "processing" | "completed" | "failed"
 export type ScanStatus = "pending" | "clean" | "rejected"
 export type AuditExportStatus = "queued" | "processing" | "completed" | "failed"

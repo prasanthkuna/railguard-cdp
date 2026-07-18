@@ -7,6 +7,8 @@ import { buildAuditHash, stableStringify } from "../../packages/audit/src"
 import { type AppRole, type AuthenticatedActor, hasRequiredRole } from "../../packages/auth/src"
 import {
   BASE_SEPOLIA_CHAIN,
+  BASE_SEPOLIA_CHAIN_ID,
+  BASE_SEPOLIA_USDC,
   buildDemoPaymentPayload,
   buildDemoTransactionHash,
 } from "../../packages/cdp/src"
@@ -51,15 +53,25 @@ import {
   sendNotification,
   sha256Buffer,
   verifyWorkOSWebhook,
-  waitForTransferConfirmation,
 } from "./providers"
 import {
-  commitPaymentGuardSpend,
-  evaluatePaymentGuard,
-  isX402GuardEnabled,
-  recordPaymentSettlement,
-  releasePaymentGuardAuthorization,
-} from "./x402Guard"
+  buildDemoExecutionSeed,
+  buildExecutionCorrelation,
+  buildGuardInput,
+  executionFailureTransition,
+  frozenGuardStatus,
+  initialGuardStatus,
+  settlementSuccessTransition,
+} from "./paymentCorrelation"
+import {
+  commitGuardAfterSettlement,
+  recordGuardSettlement,
+  releaseGuardIfPresent,
+  verifyExecutionSettlement,
+} from "./paymentExecution"
+import { transitionAfterSettlementVerification } from "./paymentReconciliation"
+import { isExecutionRetryBlocked, isIdempotentExecutionReturn } from "./paymentState"
+import { evaluatePaymentGuard, isX402GuardEnabled } from "./x402Guard"
 
 interface PolicyRun {
   id: string
@@ -780,12 +792,7 @@ export const executePaymentIntent = api(
           "execution idempotency key is already used for a different payment intent",
         )
       }
-      if (
-        idempotentExecution.status === "executed" ||
-        idempotentExecution.status === "executing" ||
-        idempotentExecution.status === "submitted" ||
-        idempotentExecution.status === "unknown"
-      ) {
+      if (isIdempotentExecutionReturn(idempotentExecution.status)) {
         return { paymentIntent: mapPaymentIntent(idempotentExecution) }
       }
     }
@@ -801,7 +808,7 @@ export const executePaymentIntent = api(
         "payment intent execution previously failed; create a new intent before retrying",
       )
     }
-    if (existing.status === "unknown" || existing.status === "submitted") {
+    if (isExecutionRetryBlocked(existing.status)) {
       throw APIError.failedPrecondition(
         "payment intent requires reconciliation before retrying execution",
       )
@@ -814,31 +821,28 @@ export const executePaymentIntent = api(
 
     let guardReceiptId: string | undefined
     let guardAuthorizationId: string | undefined
-    let guardInput:
-      | {
-          organizationID: string
-          payer: string
-          payTo: string
-          amountBaseUnits: string
-          chain: string
-          resourceUrl: string
-          idempotencyKey: string
-        }
-      | undefined
+    let guardFingerprint: string | undefined
+    let payerAddress = `0x${"00".repeat(20)}`
     if (isX402GuardEnabled()) {
-      const payerAddress = await resolveCdpPayerAddress(actor.organizationID)
-      guardInput = {
-        organizationID: actor.organizationID,
-        payer: payerAddress,
-        payTo: existing.recipient_address,
-        amountBaseUnits: existing.amount_base_units,
-        chain: existing.chain,
-        resourceUrl: `https://railguard.local/payment-intents/${params.id}`,
+      payerAddress = await resolveCdpPayerAddress(actor.organizationID)
+      const guardInput = buildGuardInput(
+        actor.organizationID,
+        params.id,
+        buildExecutionCorrelation({
+          paymentIntentId: params.id,
+          executionIdempotencyKey: idempotencyKey,
+          organizationID: actor.organizationID,
+          payerAddress,
+          recipientAddress: existing.recipient_address,
+          amountBaseUnits: existing.amount_base_units,
+          tokenAddress: existing.token_address,
+        }),
         idempotencyKey,
-      }
+      )
       const guardResult = await evaluatePaymentGuard(guardInput)
       guardReceiptId = guardResult.decision.receiptId
       guardAuthorizationId = guardResult.decision.authorizationId
+      guardFingerprint = guardResult.decision.fingerprint
       await appendAudit(
         actor.organizationID,
         "payment_intent",
@@ -860,12 +864,36 @@ export const executePaymentIntent = api(
 
     const executionId = id("exec")
 
+    const correlation = buildExecutionCorrelation({
+      paymentIntentId: params.id,
+      executionIdempotencyKey: idempotencyKey,
+      organizationID: actor.organizationID,
+      payerAddress,
+      recipientAddress: existing.recipient_address,
+      amountBaseUnits: existing.amount_base_units,
+      tokenAddress: existing.token_address,
+      guardFingerprint,
+      guardAuthorizationId,
+      guardReceiptId,
+    })
+
     const claimed = await db.queryRow<PaymentIntentRow>`
       UPDATE payment_intents
       SET
         status = 'executing',
         execution_idempotency_key = ${idempotencyKey},
-        execution_id = ${executionId}
+        execution_id = ${executionId},
+        payment_identifier = ${correlation.paymentIdentifier},
+        guard_fingerprint = ${correlation.guardFingerprint ?? null},
+        guard_authorization_id = ${correlation.guardAuthorizationId ?? null},
+        guard_receipt_id = ${correlation.guardReceiptId ?? null},
+        guard_status = ${initialGuardStatus(correlation)},
+        expected_chain_id = ${correlation.expectedChainId},
+        expected_token = ${correlation.expectedToken},
+        expected_sender = ${correlation.expectedSender},
+        expected_recipient = ${correlation.expectedRecipient},
+        expected_amount = ${correlation.expectedAmount},
+        settlement_status = 'pending'
       WHERE organization_id = ${actor.organizationID}
         AND id = ${params.id}
         AND status = 'prepared'
@@ -895,21 +923,65 @@ export const executePaymentIntent = api(
         idempotencyKey,
       })
       broadcastedTxHash = execution.txHash
+      const demoSeed = buildDemoExecutionSeed({
+        organizationID: actor.organizationID,
+        paymentIntentId: params.id,
+        idempotencyKey,
+        recipientAddress: claimed.recipient_address,
+        amountBaseUnits: claimed.amount_base_units,
+        chain: claimed.chain,
+      })
 
       await db.exec`
         UPDATE payment_intents
-        SET status = 'submitted', tx_hash = ${execution.txHash}
+        SET
+          status = 'submitted',
+          tx_hash = ${execution.txHash},
+          guard_status = ${correlation.guardAuthorizationId ? frozenGuardStatus() : null}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
       `
 
-      if (execution.mode === "live") {
-        await waitForTransferConfirmation(execution.txHash)
+      const verification = await verifyExecutionSettlement({
+        txHash: execution.txHash,
+        chain: claimed.chain,
+        correlation,
+        demoSeed,
+      })
+
+      if (verification.status !== "CONFIRMED") {
+        const settlementTransition = transitionAfterSettlementVerification(
+          verification.status,
+          correlation.guardAuthorizationId,
+        )
+        if (settlementTransition.shouldReleaseGuard) {
+          await releaseGuardIfPresent({
+            organizationID: actor.organizationID,
+            guardAuthorizationId: correlation.guardAuthorizationId,
+          })
+        }
+        const failureStatus =
+          settlementTransition.paymentStatus ??
+          (verification.status === "REVERTED" ? "reverted" : "reconciliation_required")
+        await db.exec`
+          UPDATE payment_intents
+          SET
+            status = ${failureStatus},
+            settlement_status = ${settlementTransition.settlementStatus ?? "pending"},
+            failure_reason = ${verification.reason ?? "settlement verification failed"},
+            guard_status = ${settlementTransition.guardStatus ?? (correlation.guardAuthorizationId ? frozenGuardStatus() : null)}
+          WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
+        `
+        throw APIError.failedPrecondition(
+          `payment broadcast succeeded but settlement verification returned ${verification.status}`,
+        )
       }
 
-      if (isX402GuardEnabled() && guardInput && guardReceiptId) {
-        await commitPaymentGuardSpend(guardInput, guardReceiptId)
-      }
+      await commitGuardAfterSettlement({
+        organizationID: actor.organizationID,
+        correlation,
+      })
 
+      const successTransition = settlementSuccessTransition(correlation.guardAuthorizationId)
       const row = await db.queryRow<PaymentIntentRow>`
         UPDATE payment_intents
         SET
@@ -918,7 +990,9 @@ export const executePaymentIntent = api(
           executed_at = now(),
           confirmed_at = now(),
           failure_reason = null,
-          execution_idempotency_key = ${idempotencyKey}
+          execution_idempotency_key = ${idempotencyKey},
+          settlement_status = 'confirmed',
+          guard_status = ${successTransition.guardStatus ?? (correlation.guardAuthorizationId ? "committed" : null)}
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
         RETURNING *
       `
@@ -936,7 +1010,7 @@ export const executePaymentIntent = api(
         userActor(actor),
       )
       if (isX402GuardEnabled() && guardReceiptId) {
-        const settled = recordPaymentSettlement(
+        const settled = recordGuardSettlement(
           actor.organizationID,
           guardReceiptId,
           execution.txHash,
@@ -971,21 +1045,21 @@ export const executePaymentIntent = api(
       return { paymentIntent }
     } catch (error) {
       const message = error instanceof Error ? error.message : "payment execution failed"
+      const failure = executionFailureTransition(broadcastedTxHash, guardAuthorizationId)
       if (broadcastedTxHash) {
         await db.exec`
           UPDATE payment_intents
           SET
-            status = 'unknown',
+            status = ${failure.paymentStatus},
             tx_hash = ${broadcastedTxHash},
             failure_reason = ${message},
-            execution_idempotency_key = ${idempotencyKey}
+            execution_idempotency_key = ${idempotencyKey},
+            guard_status = ${failure.guardStatus ?? null},
+            settlement_status = 'pending'
           WHERE organization_id = ${actor.organizationID}
             AND id = ${params.id}
             AND status IN ('executing', 'submitted')
         `
-        if (guardAuthorizationId) {
-          await releasePaymentGuardAuthorization(actor.organizationID, guardAuthorizationId)
-        }
         await appendAudit(
           actor.organizationID,
           "payment_intent",
@@ -994,6 +1068,7 @@ export const executePaymentIntent = api(
           {
             reason: message,
             txHash: broadcastedTxHash,
+            guardStatus: failure.guardStatus,
           },
           userActor(actor),
         )
@@ -1001,8 +1076,11 @@ export const executePaymentIntent = api(
           "payment broadcast succeeded but post-broadcast steps failed; reconciliation required",
         )
       }
-      if (guardAuthorizationId) {
-        await releasePaymentGuardAuthorization(actor.organizationID, guardAuthorizationId)
+      if (failure.releaseGuard) {
+        await releaseGuardIfPresent({
+          organizationID: actor.organizationID,
+          guardAuthorizationId,
+        })
       }
       await db.exec`
         UPDATE payment_intents
@@ -2235,6 +2313,18 @@ interface PaymentIntentRow {
   idempotency_key: string
   execution_idempotency_key: string | null
   tx_hash: string | null
+  payment_identifier: string | null
+  guard_fingerprint: string | null
+  guard_authorization_id: string | null
+  guard_receipt_id: string | null
+  guard_status: string | null
+  expected_chain_id: string | null
+  expected_token: string | null
+  expected_sender: string | null
+  expected_recipient: string | null
+  expected_amount: string | null
+  settlement_status: string | null
+  reconciliation_attempts: number | null
   created_at: Date
 }
 

@@ -1,0 +1,22 @@
+name: Testnet Evidence
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  base-sepolia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.4
+      - run: bun install --frozen-lockfile
+      - name: Base Sepolia settlement evidence
+        run: bun run testnet-evidence
+      - uses: actions/upload-artifact@v4
+        with:
+          name: base-sepolia-evidence
+          path: evidence/base-sepolia-live.json

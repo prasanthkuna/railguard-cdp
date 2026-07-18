@@ -8,8 +8,17 @@ import { http, createPublicClient } from "viem"
 import { baseSepolia } from "viem/chains"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
 import { BASE_SEPOLIA_CHAIN, buildDemoTransactionHash } from "../../packages/cdp/src"
+import {
+  type ExpectedTransferFacts,
+  type SettlementVerificationResult,
+  parseErc20TransferLogs,
+  verifyDemoSettlement,
+  verifyTransferFacts,
+} from "../../packages/settlement/src"
 import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
 import { resolveCdpConfirmationDepth } from "./runtimeConfig"
+
+const BASE_SEPOLIA_CHAIN_ID = 84532
 
 const workosApiKey = secret("WORKOS_API_KEY")
 const workosClientID = secret("WORKOS_CLIENT_ID")
@@ -31,6 +40,43 @@ const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 export type { PaymentExecutionMode } from "./config"
 
 export async function waitForTransferConfirmation(txHash: string) {
+  const verification = await verifyLiveSettlement(txHash, undefined)
+  if (verification.status === "PENDING") {
+    throw APIError.failedPrecondition(`transaction not yet confirmed: ${txHash}`)
+  }
+  if (verification.status === "REVERTED") {
+    throw APIError.failedPrecondition(`transaction reverted on-chain: ${txHash}`)
+  }
+  if (verification.status === "RECONCILIATION_REQUIRED") {
+    throw APIError.failedPrecondition(
+      `transaction confirmed but settlement facts mismatch: ${txHash}`,
+    )
+  }
+  return verification
+}
+
+export interface SettlementVerificationRequest {
+  txHash: string
+  expected?: ExpectedTransferFacts
+  demoSeed?: string
+}
+
+export async function verifySettlement(
+  input: SettlementVerificationRequest,
+): Promise<SettlementVerificationResult> {
+  if (resolvePaymentMode() === "demo") {
+    if (!input.demoSeed) {
+      return { status: "RECONCILIATION_REQUIRED", reason: "missing_demo_seed" }
+    }
+    return verifyDemoSettlement(input.txHash, buildDemoTransactionHash(input.demoSeed))
+  }
+  return verifyLiveSettlement(input.txHash, input.expected)
+}
+
+async function verifyLiveSettlement(
+  txHash: string,
+  expected: ExpectedTransferFacts | undefined,
+): Promise<SettlementVerificationResult> {
   const client = createPublicClient({
     chain: baseSepolia,
     transport: http(),
@@ -39,10 +85,31 @@ export async function waitForTransferConfirmation(txHash: string) {
     hash: txHash as `0x${string}`,
     confirmations: resolveCdpConfirmationDepth(),
   })
-  if (receipt.status !== "success") {
-    throw APIError.failedPrecondition(`transaction reverted on-chain: ${txHash}`)
+  const blockNumber = await client.getBlockNumber()
+  const confirmations = Number(blockNumber - receipt.blockNumber) + 1
+  const transfers = parseErc20TransferLogs(
+    receipt.logs.map((log) => ({
+      address: log.address,
+      topics: log.topics as readonly string[],
+      data: log.data,
+    })),
+  )
+
+  if (!expected) {
+    if (receipt.status !== "success") {
+      return { status: "REVERTED", reason: "transaction_reverted" }
+    }
+    return { status: "CONFIRMED" }
   }
-  return receipt
+
+  return verifyTransferFacts({
+    receiptStatus: receipt.status,
+    confirmations,
+    requiredConfirmations: resolveCdpConfirmationDepth(),
+    observedChainId: BASE_SEPOLIA_CHAIN_ID,
+    transfers,
+    expected,
+  })
 }
 
 function hasLiveCdpCredentials(): boolean {

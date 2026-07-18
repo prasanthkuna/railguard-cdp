@@ -23,6 +23,7 @@ coverage/
 .env
 .env.local
 .env.*.local
+evidence/
 
 # logs
 *.log

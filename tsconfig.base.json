@@ -17,6 +17,7 @@
       "@railguard/policy": ["packages/policy/src"],
       "@railguard/audit": ["packages/audit/src"],
       "@railguard/cdp": ["packages/cdp/src"],
+      "@railguard/settlement": ["packages/settlement/src"],
       "@railguard/auth": ["packages/auth/src"],
       "@railguard/db": ["packages/db/src"],
       "@x402-guard/core": ["../x402-guard/packages/core/src"],

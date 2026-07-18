@@ -24,6 +24,8 @@
     "capture:rotato": "bun run scripts/capture-rotato-pack.ts",
     "render:demo-4k": "powershell -ExecutionPolicy Bypass -File scripts/render-railguard-demo.ps1",
     "verify:demo": "bun run scripts/seed-and-verify.ts",
+    "testnet-evidence": "bun run scripts/testnet-evidence.ts",
+    "test:testnet": "cross-env TESTNET_INTEGRATION=1 bun test packages/settlement/src/base-sepolia.integration.test.ts",
     "dev:web": "bun run --filter @railguard/web dev",
     "dev:api": "encore run"
   },

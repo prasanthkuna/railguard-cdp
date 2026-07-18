@@ -71,7 +71,7 @@ export function recordPaymentSettlement(
   return guardForOrganization(organizationID).recordSettlement(receiptId, txHash)
 }
 
-/** Records durable spend after CDP execution succeeds (C-02 / H-12). */
+/** Records durable spend after settlement is verified (C-02 / H-12). */
 export async function commitPaymentGuardSpend(
   input: PaymentGuardInput,
   receiptId: string,
@@ -92,9 +92,43 @@ export async function commitPaymentGuardSpend(
   )
 }
 
+/** Crash-safe commit path using durable authorization id from payment_intents. */
+export async function commitPaymentGuardAuthorization(input: {
+  organizationID: string
+  authorizationId: string
+  agentId: string
+  amountBaseUnits: string
+}): Promise<void> {
+  await durableStore.commitAuthorization(
+    input.authorizationId,
+    input.agentId,
+    BigInt(input.amountBaseUnits),
+  )
+}
+
 export async function releasePaymentGuardAuthorization(
   organizationID: string,
   authorizationId: string,
 ): Promise<void> {
   await guardForOrganization(organizationID).releaseAuthorization(authorizationId)
+}
+
+export function paymentGuardInputFromCorrelation(input: {
+  organizationID: string
+  paymentIntentId: string
+  expectedSender: string
+  expectedRecipient: string
+  expectedAmount: string
+  chain: string
+  executionIdempotencyKey?: string | null
+}): PaymentGuardInput {
+  return {
+    organizationID: input.organizationID,
+    payer: input.expectedSender,
+    payTo: input.expectedRecipient,
+    amountBaseUnits: input.expectedAmount,
+    chain: input.chain,
+    resourceUrl: `https://railguard.local/payment-intents/${input.paymentIntentId}`,
+    idempotencyKey: input.executionIdempotencyKey ?? undefined,
+  }
 }
