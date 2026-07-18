@@ -10,9 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: prasanthkuna/x402-guard
+          path: x402-guard
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build x402-guard
+        run: |
+          cd x402-guard
+          npm ci
+          npm run build
       - run: bun install --frozen-lockfile
       - name: Base Sepolia settlement evidence
         run: bun run testnet-evidence
