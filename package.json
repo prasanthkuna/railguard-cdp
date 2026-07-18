@@ -8,6 +8,12 @@
     "node": "20"
   },
   "workspaces": ["apps/api", "apps/web", "packages/*", "encore.gen"],
+  "overrides": {
+    "@x402-guard/core": "file:./x402-guard/packages/core",
+    "@x402-guard/policy": "file:./x402-guard/packages/policy",
+    "@x402-guard/middleware": "file:./x402-guard/packages/middleware",
+    "@x402-guard/receipts": "file:./x402-guard/packages/receipts"
+  },
   "scripts": {
     "check": "bun run lint && bun run test && bun run typecheck",
     "lint": "biome check .",
