@@ -89,7 +89,10 @@ export function frozenGuardStatus(): string {
   return guardStatusAfterBroadcast()
 }
 
-export function executionFailureTransition(broadcastedTxHash?: string, guardAuthorizationId?: string) {
+export function executionFailureTransition(
+  broadcastedTxHash?: string,
+  guardAuthorizationId?: string,
+) {
   return transitionAfterExecutionFailure({ broadcastedTxHash, guardAuthorizationId })
 }
 

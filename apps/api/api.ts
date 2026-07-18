@@ -38,22 +38,6 @@ import {
   invoiceDocumentsBucket,
   notificationRequestedTopic,
 } from "./infrastructure"
-import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
-import {
-  createWorkOSOrganization,
-  exchangeWorkOSCode,
-  executeCdpTransfer,
-  extractInvoiceDocument,
-  fetchWorkOSOrganization,
-  fetchWorkOSUser,
-  getWorkOSAuthorizationURL,
-  hasWorkOSConfig,
-  rejectIfUnsafeDocument,
-  resolveCdpPayerAddress,
-  sendNotification,
-  sha256Buffer,
-  verifyWorkOSWebhook,
-} from "./providers"
 import {
   buildDemoExecutionSeed,
   buildExecutionCorrelation,
@@ -71,6 +55,22 @@ import {
 } from "./paymentExecution"
 import { transitionAfterSettlementVerification } from "./paymentReconciliation"
 import { isExecutionRetryBlocked, isIdempotentExecutionReturn } from "./paymentState"
+import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
+import {
+  createWorkOSOrganization,
+  exchangeWorkOSCode,
+  executeCdpTransfer,
+  extractInvoiceDocument,
+  fetchWorkOSOrganization,
+  fetchWorkOSUser,
+  getWorkOSAuthorizationURL,
+  hasWorkOSConfig,
+  rejectIfUnsafeDocument,
+  resolveCdpPayerAddress,
+  sendNotification,
+  sha256Buffer,
+  verifyWorkOSWebhook,
+} from "./providers"
 import { evaluatePaymentGuard, isX402GuardEnabled } from "./x402Guard"
 
 interface PolicyRun {

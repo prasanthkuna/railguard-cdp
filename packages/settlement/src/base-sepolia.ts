@@ -1,12 +1,12 @@
 /** Base Sepolia live RPC settlement verification — no mocks. */
 
-import { createPublicClient, http, type Hash } from "viem"
+import { http, type Hash, createPublicClient } from "viem"
 import { baseSepolia } from "viem/chains"
 import {
-  parseErc20TransferLogs,
-  verifyTransferFacts,
   type ExpectedTransferFacts,
   type SettlementVerificationResult,
+  parseErc20TransferLogs,
+  verifyTransferFacts,
 } from "./index.js"
 
 export const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
@@ -45,7 +45,12 @@ export async function fetchSettlementFromTx(input: {
 
   if (!input.expected) {
     if (receipt.status !== "success") {
-      return { status: "REVERTED", reason: "transaction_reverted", txHash: input.txHash, confirmations }
+      return {
+        status: "REVERTED",
+        reason: "transaction_reverted",
+        txHash: input.txHash,
+        confirmations,
+      }
     }
     return { status: "CONFIRMED", txHash: input.txHash, confirmations }
   }
@@ -67,7 +72,10 @@ export async function discoverRecentUsdcTransfer(input?: {
   rpcUrl?: string
   lookbackBlocks?: number
   maxBlockRange?: number
-}): Promise<{ txHash: string; transfer: ReturnType<typeof parseErc20TransferLogs>[number] } | null> {
+}): Promise<{
+  txHash: string
+  transfer: ReturnType<typeof parseErc20TransferLogs>[number]
+} | null> {
   const client = createBaseSepoliaClient(input?.rpcUrl)
   const maxRange = input?.maxBlockRange ?? 2000
   const lookback = input?.lookbackBlocks ?? 20_000
@@ -95,7 +103,8 @@ export async function discoverRecentUsdcTransfer(input?: {
 
     if (logs.length === 0) continue
 
-    const last = logs[logs.length - 1]!
+    const last = logs[logs.length - 1]
+    if (!last) continue
     const transfers = parseErc20TransferLogs([
       {
         address: last.address,

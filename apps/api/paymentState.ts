@@ -24,17 +24,15 @@ export function terminalStatusAfterBroadcastFailure(
 }
 
 /** Release guard budget only when broadcast definitely did not occur. */
-export function shouldReleaseGuardOnExecutionFailure(broadcastedTxHash: string | undefined): boolean {
+export function shouldReleaseGuardOnExecutionFailure(
+  broadcastedTxHash: string | undefined,
+): boolean {
   return !broadcastedTxHash
 }
 
 /** Execution retry must not proceed while reconciliation is required. */
 export function isExecutionRetryBlocked(status: string): boolean {
-  return (
-    status === "unknown" ||
-    status === "submitted" ||
-    status === "reconciliation_required"
-  )
+  return status === "unknown" || status === "submitted" || status === "reconciliation_required"
 }
 
 /** Idempotent execute returns existing row without re-broadcasting. */

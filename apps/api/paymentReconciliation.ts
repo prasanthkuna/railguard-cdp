@@ -27,7 +27,10 @@ export interface ReconciliationTransition {
   shouldRecordSettlement: boolean
 }
 
-export function buildPaymentIdentifier(paymentIntentId: string, executionIdempotencyKey: string): string {
+export function buildPaymentIdentifier(
+  paymentIntentId: string,
+  executionIdempotencyKey: string,
+): string {
   return `${paymentIntentId}:${executionIdempotencyKey}`
 }
 
@@ -47,11 +50,7 @@ export function transitionAfterExecutionFailure(input: {
   const releaseGuard = shouldReleaseGuardOnExecutionFailure(input.broadcastedTxHash)
   return {
     paymentStatus,
-    guardStatus: input.guardAuthorizationId
-      ? releaseGuard
-        ? "released"
-        : "frozen"
-      : undefined,
+    guardStatus: input.guardAuthorizationId ? (releaseGuard ? "released" : "frozen") : undefined,
     releaseGuard,
   }
 }
@@ -99,4 +98,3 @@ export function transitionAfterSettlementVerification(
       }
   }
 }
-

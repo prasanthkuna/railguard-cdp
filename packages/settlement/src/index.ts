@@ -103,7 +103,9 @@ export function verifyTransferFacts(
     return { status: "PENDING", reason: "insufficient_confirmations" }
   }
 
-  const match = input.transfers.find((transfer) => transferMatchesExpected(transfer, input.expected))
+  const match = input.transfers.find((transfer) =>
+    transferMatchesExpected(transfer, input.expected),
+  )
   if (!match) {
     return {
       status: "RECONCILIATION_REQUIRED",
@@ -115,7 +117,10 @@ export function verifyTransferFacts(
 }
 
 /** Demo settlements are hash-bound, not chain-bound. */
-export function verifyDemoSettlement(txHash: string, expectedTxHash: string): SettlementVerificationResult {
+export function verifyDemoSettlement(
+  txHash: string,
+  expectedTxHash: string,
+): SettlementVerificationResult {
   if (txHash === expectedTxHash) {
     return { status: "CONFIRMED" }
   }

@@ -105,8 +105,10 @@ describe("settlement fact verification", () => {
 
   it("matches transfers case-insensitively", () => {
     const transfers = parseErc20TransferLogs([transferLog({ amount: 1_000_000n })])
+    const transfer = transfers[0]
+    expect(transfer).toBeDefined()
     expect(
-      transferMatchesExpected(transfers[0]!, {
+      transferMatchesExpected(transfer, {
         chainId: 84532,
         tokenAddress: TOKEN.toUpperCase(),
         sender: SENDER.toUpperCase(),

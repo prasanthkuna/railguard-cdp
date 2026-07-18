@@ -1,5 +1,5 @@
-import type { SettlementVerificationResult } from "../../packages/settlement/src"
 import { BASE_SEPOLIA_CHAIN_ID } from "../../packages/cdp/src"
+import type { SettlementVerificationResult } from "../../packages/settlement/src"
 import type { ExecutionCorrelation } from "./paymentCorrelation"
 import { verifySettlement } from "./providers"
 import {
