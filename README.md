@@ -1,37 +1,67 @@
 # Railguard CDP
 
-[![v0.1-reference](https://img.shields.io/badge/release-v0.1--reference-blue)](https://github.com/prasanthkuna/railguard-cdp/releases/tag/v0.1-reference)
 [![tests](https://img.shields.io/badge/API%20tests-bun%20passing-green)](./apps/api/payment-state.test.ts)
+[![evidence](https://img.shields.io/badge/evidence-Base%20Sepolia%20live-blue)](https://github.com/prasanthkuna/railguard-new/tree/master/evidence/cdp-base-sepolia)
 [![status](https://img.shields.io/badge/status-reference%20implementation-lightgrey)](https://github.com/prasanthkuna/railguard-new/blob/master/docs/RELEASE_v0.1-reference.md)
 
-Invoice-to-USDC on Base Sepolia via Coinbase CDP — **enforcement boundary #3**.
+**Enterprise execution and reconciliation** — invoice-to-USDC on Base Sepolia via Coinbase CDP.
 
-> **Start here:** [railguard-new PORTFOLIO](https://github.com/prasanthkuna/railguard-new/blob/master/docs/PORTFOLIO.md) — **send only this link** in outreach. Tag: `v0.1-reference`.
+> **Portfolio:** [railguard-new/evidence](https://github.com/prasanthkuna/railguard-new/tree/master/evidence) — public proof index.
 
-![Railguard stack — three boundaries](https://raw.githubusercontent.com/prasanthkuna/railguard-new/master/assets/x-campaign/diagram-boundaries.png)
+## Four-layer stack
 
-## Sibling repos
+```text
+Agent Payment Failure Lab   → adversarial profiles (APF-003, APF-004, APF-005)
+x402-guard                  → pre-payment authorization and budget reservation
+railguard-new               → on-chain session enforcement (SignGate + hook)
+railguard-cdp (this repo)   → CDP execution, settlement verification, reconciliation
+```
 
-| Repo | Role |
-|------|------|
-| [railguard-new](https://github.com/prasanthkuna/railguard-new) | On-chain hook + SignGate session enforcement |
-| [x402-guard](https://github.com/prasanthkuna/x402-guard) | Pre-sign agent payment policy (`authorizePayment`) |
+## What this repo proves
 
-**CDP vs hook:** This repo proves invoice approval, CDP execution, and post-broadcast reconciliation. The hook in railguard-new proves smart-account-native caps. v0.1 shares policy/audit primitives; full CDP→smart-account routing is future hardening.
+| Capability | Status |
+|------------|--------|
+| Invoice → policy → approval → payment intent | Shipped |
+| x402 budget reservation (optional) | `X402_GUARD_ENABLED=true` |
+| CDP wallet execution (Base Sepolia USDC) | `PAYMENT_MODE=live` |
+| **Frozen authorization after broadcast** | INV-001 — [docs](./docs/INVARIANTS.md) |
+| Settlement-fact verification (chain, token, sender, recipient, amount) | INV-002 |
+| Crash/restart reconciliation | INV-004, INV-005 |
+| Durable guard correlation fields | Migration `008` |
 
-## x402-guard integration
+## Payment modes
 
-Set `X402_GUARD_ENABLED=true` before API start. CI checks out sibling [x402-guard](https://github.com/prasanthkuna/x402-guard) and builds packages automatically.
+| Mode | `PAYMENT_MODE` | Behavior |
+|------|----------------|----------|
+| **Demo** | `demo` | Hash-bound settlement simulation — no CDP keys, no chain spend |
+| **Live testnet** | `live` | Real CDP wallet + Base Sepolia USDC — requires CDP credentials |
+| **Production** | — | Not shipped — reference implementation only |
+
+## Quick start
+
+### Bash / Linux / macOS
+
+```bash
+git clone https://github.com/prasanthkuna/railguard-cdp.git
+cd railguard-cdp
+bun install
+bun run dev:api
+```
+
+### Windows (PowerShell)
 
 ```powershell
-# Local: junction or clone x402-guard inside coinbase/
-cd coinbase
+git clone https://github.com/prasanthkuna/railguard-cdp.git
+cd railguard-cdp
 bun install
-cd x402-guard/packages/core; bun run build
-cd ../policy; bun run build
-cd ../middleware; bun run build
-cd ../../..
-$env:X402_GUARD_ENABLED = "true"
+bun run dev:api
+```
+
+### x402-guard integration
+
+```bash
+# Clone x402-guard as sibling or junction
+export X402_GUARD_ENABLED=true
 bun run dev:api
 ```
 
@@ -42,19 +72,65 @@ bun run dev:api
 | `PAYMENT_MODE` | `demo` or `live` (required before execute) |
 | `X402_GUARD_ENABLED` | `true` to gate payments with x402-guard |
 | `CDP_CONFIRMATION_DEPTH` | Chain confirmations before confirmed (default `1`) |
+| `BASE_SEPOLIA_RPC_URL` | Optional RPC override for settlement verification |
+
+## Lifecycle invariant (APF-003)
+
+```text
+No broadcast proof  → release authorization
+Broadcast occurred  → freeze authorization
+Confirmed           → commit authorization
+Reverted            → release authorization
+Mismatch/uncertain  → reconciliation required
+```
+
+Proof: [evidence/apf-003](https://github.com/prasanthkuna/railguard-new/tree/master/evidence/apf-003) · [POSTMORTEM](https://github.com/prasanthkuna/agent-payment-failure-lab/blob/main/docs/POSTMORTEM-APF-003.md)
 
 ## Tests
 
-```powershell
-bun run lint
+```bash
 bun test apps/api packages
 encore check
 ```
 
-Key invariant tests: `apps/api/payment-state.test.ts`, `apps/api/execution-claim.test.ts`
+| Test file | Covers |
+|-----------|--------|
+| `payment-state.test.ts` | INV-001, INV-005 state transitions |
+| `payment-lifecycle.test.ts` | APF-003, APF-004 adversarial scenarios |
+| `reconcile.test.ts` | Reconciler settlement convergence |
+| `execution-claim.test.ts` | INV-003 concurrent execution claim |
+| `packages/settlement` | INV-002 transfer-fact verification |
 
-## Remotes
+## Live evidence (Base Sepolia)
 
-- `github` — https://github.com/prasanthkuna/railguard-cdp (this repo)
-- `encore` — Encore Cloud deploy target
-- `origin` — archived legacy `prasanthkuna/railguard`
+```bash
+BASE_SEPOLIA_TX_HASH=0x80cac8ed62ca6ef0797f1a6244ab52e13e6c39ea23f3a0fa58e2fa95623872dd \
+  bun run scripts/testnet-evidence.ts
+```
+
+Public manifest: [evidence/cdp-base-sepolia](https://github.com/prasanthkuna/railguard-new/tree/master/evidence/cdp-base-sepolia)
+
+## Documentation
+
+- [INVARIANTS.md](./docs/INVARIANTS.md) — INV-001 through INV-008
+- [STATE_MACHINE.md](./docs/STATE_MACHINE.md) — payment, guard, settlement axes
+
+## Known limitations
+
+- Reference implementation — not production-ready for mainnet funds
+- Demo mode uses hash binding, not full on-chain transfer verification
+- Single RPC endpoint — no reorg detection or multi-provider quorum
+- Hosted demo requires WorkOS; dev-header auth must be disabled in production
+- Smart-account routing (CDP → SignGate hook) is future work
+
+## Sibling repos
+
+| Repo | Role |
+|------|------|
+| [agent-payment-failure-lab](https://github.com/prasanthkuna/agent-payment-failure-lab) | Adversarial failure profiles |
+| [x402-guard](https://github.com/prasanthkuna/x402-guard) | Pre-sign policy (`authorizePayment`) |
+| [railguard-new](https://github.com/prasanthkuna/railguard-new) | On-chain hook + SignGate |
+
+## License
+
+Apache-2.0

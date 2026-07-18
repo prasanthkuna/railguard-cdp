@@ -30,7 +30,9 @@ const WORKOS_STATE_KEY = "railguard_workos_state"
 const WORKOS_CODE_VERIFIER_KEY = "railguard_workos_code_verifier"
 
 export function isDevAuthEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ALLOW_DEV_AUTH !== "false"
+  if (process.env.NEXT_PUBLIC_ALLOW_DEV_AUTH === "true") return true
+  if (process.env.NEXT_PUBLIC_ALLOW_DEV_AUTH === "false") return false
+  return process.env.NODE_ENV !== "production"
 }
 
 function normalizeDevIdentity(identity: DevIdentity): DevIdentity {

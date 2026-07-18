@@ -72,6 +72,7 @@ import {
   verifyWorkOSWebhook,
 } from "./providers"
 import { evaluatePaymentGuard, isX402GuardEnabled } from "./x402Guard"
+import { assertExecutionAllowed } from "./executionSafety"
 
 interface PolicyRun {
   id: string
@@ -213,6 +214,7 @@ interface CreatePaymentIntentRequest {
 interface ExecutePaymentIntentRequest {
   id: string
   idempotencyKey: string
+  acknowledgeLiveExecution?: boolean
 }
 
 interface PolicySimulationRequest extends WorkspaceSettings {
@@ -779,6 +781,10 @@ export const executePaymentIntent = api(
   },
   async (params: ExecutePaymentIntentRequest): Promise<{ paymentIntent: PaymentIntent }> => {
     const actor = await requireActor(["owner", "finance"])
+    assertExecutionAllowed({
+      organizationID: actor.organizationID,
+      acknowledgeLiveExecution: params.acknowledgeLiveExecution,
+    })
     const idempotencyKey = ensureIdempotencyKey(params.idempotencyKey)
 
     const idempotentExecution = await db.queryRow<PaymentIntentRow>`

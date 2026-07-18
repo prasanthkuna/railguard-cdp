@@ -21,4 +21,9 @@ export function assertPaymentModeConfigured(): void {
   resolvePaymentMode()
 }
 
+/** @internal test helper */
+export function resetPaymentModeCacheForTests(): void {
+  cachedPaymentMode = undefined
+}
+
 export { resolveCdpConfirmationDepth } from "./runtimeConfig"
