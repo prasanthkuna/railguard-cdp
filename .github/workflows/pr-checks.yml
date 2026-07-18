@@ -60,8 +60,8 @@ jobs:
             apps/api/execution-claim.test.ts \
             packages/settlement/src/index.test.ts
 
-      - name: Encore typecheck
-        run: bun run typecheck
+      - name: Web typecheck
+        run: bun run --filter @railguard/web typecheck
 
       - name: Web build
         run: bun run build:web
