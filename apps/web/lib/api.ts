@@ -19,10 +19,19 @@ import type {
   VendorWallet,
 } from "./types"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+/** Browser calls same-origin /api proxy (avoids CORS). Server uses Encore URL directly. */
+function resolveApiUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL
+  }
+  if (typeof window !== "undefined") {
+    return "/api"
+  }
+  return process.env.ENCORE_API_URL || "http://localhost:4000"
+}
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${resolveApiUrl()}${path}`, {
     ...options,
     headers: {
       ...getAuthHeaders(),

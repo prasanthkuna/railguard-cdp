@@ -15,6 +15,7 @@ Current surfaces:
 Key environment variables:
 
 - `NEXT_PUBLIC_APP_URL`
-- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_API_URL` — optional; defaults to `/api` (same-origin proxy) in the browser
+- `ENCORE_API_URL` — server-side proxy target (Vercel); defaults to staging Encore
 - `NEXT_PUBLIC_ALLOW_DEV_AUTH`
 - `NEXT_PUBLIC_DEFAULT_ORG_ID`
