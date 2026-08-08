@@ -45,7 +45,8 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       const err = await res.json()
       message = err.message || err.error || message
     } catch {}
-    if (!isDevAuthEnabled() && (res.status === 401 || res.status === 403)) {
+    // Only clear on 401 — 403 means authenticated but unauthorized for the action.
+    if (!isDevAuthEnabled() && res.status === 401) {
       clearAuthSession()
     }
     throw new Error(message)
