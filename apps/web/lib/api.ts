@@ -81,7 +81,28 @@ async function refreshAuthSession(): Promise<boolean> {
   return refreshInFlight
 }
 
+function accessTokenExpiresSoon(token: string, skewSeconds = 60): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? "")) as { exp?: number }
+    if (!payload.exp) return false
+    return payload.exp * 1000 <= Date.now() + skewSeconds * 1000
+  } catch {
+    return false
+  }
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
+  if (
+    allowRefresh &&
+    !isDevAuthEnabled() &&
+    !path.startsWith("/auth/workos/")
+  ) {
+    const session = getAuthSession()
+    if (session?.accessToken && session.refreshToken && accessTokenExpiresSoon(session.accessToken)) {
+      await refreshAuthSession()
+    }
+  }
+
   const res = await fetch(`${resolveApiUrl()}${path}`, {
     ...options,
     headers: {
@@ -95,14 +116,14 @@ async function apiFetch<T>(path: string, options?: RequestInit, allowRefresh = t
     if (
       allowRefresh &&
       !isDevAuthEnabled() &&
-      res.status === 401 &&
+      (res.status === 401 || res.status === 500) &&
       !path.startsWith("/auth/workos/")
     ) {
       const refreshed = await refreshAuthSession()
       if (refreshed) {
         return apiFetch<T>(path, options, false)
       }
-      clearAuthSession()
+      if (res.status === 401) clearAuthSession()
     } else if (!isDevAuthEnabled() && res.status === 401 && !path.startsWith("/auth/workos/")) {
       clearAuthSession()
     }

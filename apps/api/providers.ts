@@ -210,6 +210,9 @@ export function hasWorkOSConfig(): boolean {
 export function isDevHeaderAuthEnabled(): boolean {
   if (process.env.ALLOW_DEV_HEADER_AUTH === "true") return true
   if (process.env.ALLOW_DEV_HEADER_AUTH === "false") return false
+  // WorkOS-configured cloud envs must not silently fall back to header auth:
+  // expired JWTs + org/email headers were creating conflicting users (unique email) → 500.
+  if (hasWorkOSConfig()) return false
   return process.env.NODE_ENV !== "production"
 }
 

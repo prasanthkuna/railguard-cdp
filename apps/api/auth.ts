@@ -57,7 +57,8 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
     throw APIError.unauthenticated("missing bearer token")
   }
 
-  if (hasWorkOSConfig() && token.split(".").length === 3) {
+  const looksLikeJwt = token.split(".").length === 3
+  if (hasWorkOSConfig() && looksLikeJwt) {
     try {
       const verified = await verifyWorkOSAccessToken(token)
       if (!verified.userID) {
@@ -94,10 +95,10 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
         email: params.email?.trim(),
       }
     } catch (error) {
-      if (!devHeaderAuthEnabled || !params.organizationID) {
-        if (error instanceof APIError) throw error
-        throw APIError.unauthenticated("invalid bearer token")
-      }
+      // Never fall through to header auth for JWT bearers — that minted fake user IDs
+      // from truncated tokens and collided on (org, email), returning 500s to the UI.
+      if (error instanceof APIError) throw error
+      throw APIError.unauthenticated("invalid bearer token")
     }
   }
 
