@@ -111,7 +111,12 @@ async function apiFetch<T>(path: string, options?: RequestInit, allowRefresh = t
   }
 
   const text = await res.text()
-  if (!text) return {} as T
+  if (!text) {
+    if (path.startsWith("/auth/workos/")) {
+      throw new Error("Empty authentication response from API. Please try again.")
+    }
+    return {} as T
+  }
 
   return JSON.parse(text)
 }
