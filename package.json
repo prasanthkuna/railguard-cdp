@@ -10,7 +10,6 @@
   "workspaces": [
     "apps/api",
     "apps/web",
-    "apps/video",
     "packages/*",
     "vendor/x402-guard/packages/*",
     "encore.gen"
