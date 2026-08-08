@@ -102,10 +102,12 @@ export function hasAuthSession(): boolean {
 }
 
 export function setAuthSession(session: AuthSession) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))
-    notifyAuthChange()
+  if (typeof window === "undefined") return
+  if (!session.accessToken?.trim()) {
+    return
   }
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))
+  notifyAuthChange()
 }
 
 export function clearAuthSession() {

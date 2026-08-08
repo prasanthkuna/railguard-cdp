@@ -417,6 +417,8 @@ export async function bindWorkOSSessionToOrganization(input: {
   await ensureWorkOSOrganizationMembership({
     userID: input.user.id,
     organizationID,
+  }).catch(() => {
+    // Membership attach can fail if WorkOS invites are required; local org binding still works.
   })
 
   try {
