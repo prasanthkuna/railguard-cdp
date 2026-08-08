@@ -1310,9 +1310,12 @@ async function finalizeWorkOSSession(session: {
   email: string
 }> {
   const organizationID = session.organizationID ?? defaultWorkOSOrganizationID()
+  if (!session.accessToken) {
+    throw APIError.unauthenticated("WorkOS did not return an access token")
+  }
 
-  // Always persist local identity first so the browser can enter the app even if
-  // WorkOS membership/refresh is slow (Vercel rewrite timeouts return empty 200s).
+  // Keep this path minimal and fast. Org membership refresh is best-effort and async
+  // so slow WorkOS admin APIs cannot wipe the JSON response body on timeout.
   await ensureLocalIdentity({
     organizationID,
     userID: session.user.id,
@@ -1320,7 +1323,15 @@ async function finalizeWorkOSSession(session: {
     role: "owner",
   })
 
-  const fallback = {
+  void bindWorkOSSessionToOrganization({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    sealedSession: session.sealedSession,
+    organizationID,
+    user: session.user,
+  }).catch(() => undefined)
+
+  return {
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
     sealedSession: session.sealedSession,
@@ -1328,57 +1339,27 @@ async function finalizeWorkOSSession(session: {
     userID: session.user.id,
     email: session.user.email,
   }
-
-  if (!session.accessToken || !session.refreshToken) {
-    return fallback
-  }
-
-  try {
-    const bound = await Promise.race([
-      bindWorkOSSessionToOrganization({
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-        sealedSession: session.sealedSession,
-        organizationID,
-        user: session.user,
-      }),
-      new Promise<null>((resolve) => {
-        setTimeout(() => resolve(null), 2500)
-      }),
-    ])
-
-    if (!bound?.accessToken) return fallback
-
-    await ensureLocalIdentity({
-      organizationID: bound.organizationID ?? organizationID,
-      userID: bound.user.id,
-      email: bound.user.email,
-      role: "owner",
-    })
-
-    return {
-      accessToken: bound.accessToken,
-      refreshToken: bound.refreshToken,
-      sealedSession: bound.sealedSession,
-      organizationID: bound.organizationID ?? organizationID,
-      userID: bound.user.id,
-      email: bound.user.email,
-    }
-  } catch {
-    return fallback
-  }
 }
 
 export const workosExchange = api(
-  { expose: true, method: "POST", path: "/auth/workos/exchange", sensitive: true },
-  async (params: WorkOSExchangeRequest) => {
+  { expose: true, method: "POST", path: "/auth/workos/exchange" },
+  async (
+    params: WorkOSExchangeRequest,
+  ): Promise<{
+    accessToken: string
+    refreshToken: string
+    sealedSession?: string
+    organizationID?: string
+    userID: string
+    email: string
+  }> => {
     try {
       const session = await exchangeWorkOSCode({
         code: params.code,
         redirectURI: params.redirectURI,
         codeVerifier: params.codeVerifier,
       })
-      return finalizeWorkOSSession(session)
+      return await finalizeWorkOSSession(session)
     } catch (error) {
       throw APIError.unauthenticated(workosErrorMessage(error, "Failed to complete sign-in"))
     }
@@ -1386,8 +1367,17 @@ export const workosExchange = api(
 )
 
 export const workosPassword = api(
-  { expose: true, method: "POST", path: "/auth/workos/password", sensitive: true },
-  async (params: WorkOSPasswordRequest) => {
+  { expose: true, method: "POST", path: "/auth/workos/password" },
+  async (
+    params: WorkOSPasswordRequest,
+  ): Promise<{
+    accessToken: string
+    refreshToken: string
+    sealedSession?: string
+    organizationID?: string
+    userID: string
+    email: string
+  }> => {
     if (!params.email?.trim() || !params.password) {
       throw APIError.invalidArgument("email and password are required")
     }
@@ -1397,7 +1387,7 @@ export const workosPassword = api(
         password: params.password,
         organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
       })
-      return finalizeWorkOSSession(session)
+      return await finalizeWorkOSSession(session)
     } catch (error) {
       throw APIError.unauthenticated(workosErrorMessage(error, "Invalid email or password"))
     }
@@ -1405,8 +1395,17 @@ export const workosPassword = api(
 )
 
 export const workosSignup = api(
-  { expose: true, method: "POST", path: "/auth/workos/signup", sensitive: true },
-  async (params: WorkOSSignupRequest) => {
+  { expose: true, method: "POST", path: "/auth/workos/signup" },
+  async (
+    params: WorkOSSignupRequest,
+  ): Promise<{
+    accessToken: string
+    refreshToken: string
+    sealedSession?: string
+    organizationID?: string
+    userID: string
+    email: string
+  }> => {
     if (!params.email?.trim() || !params.password) {
       throw APIError.invalidArgument("email and password are required")
     }
@@ -1432,7 +1431,7 @@ export const workosSignup = api(
         password: params.password,
         organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
       })
-      return finalizeWorkOSSession(session)
+      return await finalizeWorkOSSession(session)
     } catch (error) {
       throw APIError.unauthenticated(
         workosErrorMessage(error, "Account created but sign-in failed. Try signing in."),
@@ -1442,8 +1441,17 @@ export const workosSignup = api(
 )
 
 export const workosRefresh = api(
-  { expose: true, method: "POST", path: "/auth/workos/refresh", sensitive: true },
-  async (params: WorkOSRefreshRequest) => {
+  { expose: true, method: "POST", path: "/auth/workos/refresh" },
+  async (
+    params: WorkOSRefreshRequest,
+  ): Promise<{
+    accessToken: string
+    refreshToken: string
+    sealedSession?: string
+    organizationID?: string
+    userID: string
+    email: string
+  }> => {
     if (!params.refreshToken?.trim()) {
       throw APIError.invalidArgument("refreshToken is required")
     }
@@ -1452,7 +1460,7 @@ export const workosRefresh = api(
         refreshToken: params.refreshToken,
         organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
       })
-      return finalizeWorkOSSession({
+      return await finalizeWorkOSSession({
         ...session,
         user: session.user,
       })
