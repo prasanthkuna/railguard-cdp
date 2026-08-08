@@ -3,7 +3,7 @@ import { CdpClient } from "@coinbase/cdp-sdk"
 import { WorkOS } from "@workos-inc/node"
 import { APIError } from "encore.dev/api"
 import { secret } from "encore.dev/config"
-import { createRemoteJWKSet, jwtVerify } from "jose"
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from "jose"
 import { http, createPublicClient } from "viem"
 import { baseSepolia } from "viem/chains"
 import { type AppRole, normalizeAppRole } from "../../packages/auth/src"
@@ -349,14 +349,155 @@ export async function getWorkOSAuthorizationURL(input: {
   loginHint?: string
 }): Promise<AuthURLResult> {
   const workos = getWorkOS()
+  const provider = input.provider ?? "GoogleOAuth"
+  // GoogleOAuth is an environment social connection. Passing organizationId makes WorkOS
+  // look for an SSO Connection on that org and fails with organization_invalid.
+  const organizationId =
+    provider === "GoogleOAuth" ? undefined : input.organizationID ?? defaultWorkOSOrganizationID()
+
   return workos.userManagement.getAuthorizationUrlWithPKCE({
-    provider: input.provider ?? "GoogleOAuth",
+    provider,
     clientId: workosClientID(),
     redirectUri: input.redirectURI,
-    organizationId: input.organizationID ?? defaultWorkOSOrganizationID(),
-    ...(input.provider === "authkit" && input.screenHint ? { screenHint: input.screenHint } : {}),
+    ...(organizationId ? { organizationId } : {}),
+    ...(provider === "authkit" && input.screenHint ? { screenHint: input.screenHint } : {}),
     ...(input.loginHint ? { loginHint: input.loginHint } : {}),
   })
+}
+
+export async function ensureWorkOSOrganizationMembership(input: {
+  userID: string
+  organizationID: string
+  roleSlug?: string
+}): Promise<void> {
+  const workos = getWorkOS()
+  const memberships = await workos.userManagement.listOrganizationMemberships({
+    userId: input.userID,
+    organizationId: input.organizationID,
+  })
+  const existing = memberships.data.find((membership) => membership.organizationId === input.organizationID)
+  if (existing?.status === "active") return
+  if (existing?.status === "inactive") {
+    await workos.userManagement.reactivateOrganizationMembership(existing.id)
+    return
+  }
+
+  try {
+    await workos.userManagement.createOrganizationMembership({
+      userId: input.userID,
+      organizationId: input.organizationID,
+      ...(input.roleSlug ? { roleSlug: input.roleSlug } : {}),
+    })
+  } catch (error) {
+    const message = workosErrorMessage(error, "").toLowerCase()
+    if (!message.includes("already") && !message.includes("conflict") && !message.includes("exists")) {
+      throw error
+    }
+  }
+}
+
+export async function bindWorkOSSessionToOrganization(input: {
+  accessToken: string
+  refreshToken: string
+  sealedSession?: string
+  user: { id: string; email: string; firstName?: string; lastName?: string }
+  organizationID?: string
+}): Promise<WorkOSExchangeResult> {
+  const organizationID = input.organizationID ?? defaultWorkOSOrganizationID()
+  if (!organizationID) {
+    return {
+      accessToken: input.accessToken,
+      refreshToken: input.refreshToken,
+      sealedSession: input.sealedSession,
+      organizationID: undefined,
+      user: input.user,
+    }
+  }
+
+  await ensureWorkOSOrganizationMembership({
+    userID: input.user.id,
+    organizationID,
+  })
+
+  try {
+    const claims = decodeJwt(input.accessToken)
+    if (typeof claims.org_id === "string" && claims.org_id === organizationID) {
+      return {
+        accessToken: input.accessToken,
+        refreshToken: input.refreshToken,
+        sealedSession: input.sealedSession,
+        organizationID,
+        user: input.user,
+      }
+    }
+  } catch {
+    // fall through to refresh
+  }
+
+  try {
+    const refreshed = await refreshWorkOSSession({
+      refreshToken: input.refreshToken,
+      organizationID,
+    })
+    return {
+      ...refreshed,
+      organizationID: refreshed.organizationID ?? organizationID,
+      user: refreshed.user.email ? refreshed.user : input.user,
+    }
+  } catch {
+    return {
+      accessToken: input.accessToken,
+      refreshToken: input.refreshToken,
+      sealedSession: input.sealedSession,
+      organizationID,
+      user: input.user,
+    }
+  }
+}
+
+export async function createWorkOSPasswordUser(input: {
+  email: string
+  password: string
+  firstName?: string
+  lastName?: string
+}): Promise<{ id: string; email: string }> {
+  const workos = getWorkOS()
+  try {
+    const user = await workos.userManagement.createUser({
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      emailVerified: true,
+      ...(input.firstName ? { firstName: input.firstName } : {}),
+      ...(input.lastName ? { lastName: input.lastName } : {}),
+    })
+    return { id: user.id, email: user.email }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create account"
+    throw APIError.invalidArgument(message)
+  }
+}
+
+export function workosErrorMessage(error: unknown, fallback: string): string {
+  if (!error || typeof error !== "object") {
+    return error instanceof Error ? error.message : fallback
+  }
+  const record = error as Record<string, unknown>
+  for (const key of ["message", "errorDescription", "error_description", "code", "error"]) {
+    const value = record[key]
+    if (typeof value === "string" && value.trim()) {
+      if (key === "code" || key === "error") continue
+      return value
+    }
+  }
+  const rawData = record.rawData
+  if (rawData && typeof rawData === "object") {
+    const nested = rawData as Record<string, unknown>
+    for (const key of ["message", "error_description", "error"]) {
+      const value = nested[key]
+      if (typeof value === "string" && value.trim() && key !== "error") return value
+    }
+  }
+  return error instanceof Error && error.message ? error.message : fallback
 }
 
 export async function exchangeWorkOSCode(input: {
@@ -401,10 +542,7 @@ export async function authenticateWorkOSPassword(input: {
       ...(input.userAgent ? { userAgent: input.userAgent } : {}),
     })
     const mapped = mapWorkOSAuthResponse(response)
-    if (mapped.organizationID || !organizationID) return mapped
-
-    // Password grant succeeded without org claim — bind to the configured tenant locally.
-    return { ...mapped, organizationID }
+    return mapped
   } catch (error) {
     const pendingAuthenticationToken = pendingAuthenticationTokenFromError(error)
     if (organizationID && pendingAuthenticationToken) {

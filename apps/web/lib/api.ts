@@ -147,6 +147,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password, organizationID }),
     }),
+  workosSignup: (email: string, password: string, organizationID?: string) =>
+    apiFetch<AuthExchangeResponse>("/auth/workos/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password, organizationID }),
+    }),
   workosRefresh: (refreshToken: string, organizationID?: string) =>
     apiFetch<AuthExchangeResponse>("/auth/workos/refresh", {
       method: "POST",

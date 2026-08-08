@@ -1,8 +1,10 @@
 "use client"
 
 import { ShieldCheck } from "lucide-react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import * as React from "react"
+import { Button } from "../../../components/ui/Button"
 import { Card, CardHeader, CardTitle } from "../../../components/ui/Card"
 import { api } from "../../../lib/api"
 import { clearWorkOSAuthFlow, getWorkOSAuthFlow, setAuthSession } from "../../../lib/auth"
@@ -17,14 +19,30 @@ export function CallbackContent() {
     let cancelled = false
 
     async function finishSignIn() {
+      const oauthError = searchParams.get("error")
+      const oauthDescription = searchParams.get("error_description")
+      if (oauthError) {
+        const message = (oauthDescription || oauthError).replace(/\+/g, " ")
+        clearWorkOSAuthFlow()
+        if (!cancelled) setError(message)
+        return
+      }
+
       const code = searchParams.get("code")
       const state = searchParams.get("state")
       const flow = getWorkOSAuthFlow()
       const redirectURI =
         process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || `${window.location.origin}/auth/callback`
 
-      if (!code || !state || !flow) {
-        if (!cancelled) setError("Missing WorkOS callback state. Restart sign-in and try again.")
+      if (!code || !state) {
+        if (!cancelled) setError("Missing authorization code. Restart sign-in and try again.")
+        return
+      }
+
+      if (!flow) {
+        if (!cancelled) {
+          setError("Sign-in session expired in this browser tab. Restart sign-in and try again.")
+        }
         return
       }
 
@@ -53,7 +71,7 @@ export function CallbackContent() {
         router.replace("/")
       } catch (error) {
         clearWorkOSAuthFlow()
-        if (!cancelled) setError(getErrorMessage(error, "Failed to finish WorkOS sign-in"))
+        if (!cancelled) setError(getErrorMessage(error, "Failed to finish Google sign-in"))
       }
     }
 
@@ -68,13 +86,24 @@ export function CallbackContent() {
       <Card className="w-full max-w-lg p-6 text-center md:p-8">
         <CardHeader className="items-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--rg-accent-dim)]">
-            <ShieldCheck className={`h-7 w-7 ${error ? "text-[var(--rg-state-regret)]" : "text-[var(--rg-accent)] rg-pulse-ring"}`} />
+            <ShieldCheck
+              className={`h-7 w-7 ${error ? "text-[var(--rg-state-regret)]" : "text-[var(--rg-accent)] rg-pulse-ring"}`}
+            />
           </div>
           <CardTitle>{error ? "Sign-in failed" : "Completing sign-in"}</CardTitle>
           <p className="text-sm text-[var(--rg-text-muted)]">
-            {error || "Finalizing your WorkOS session and loading the workspace."}
+            {error || "Finalizing your session and loading the workspace."}
           </p>
         </CardHeader>
+        {error ? (
+          <div className="mt-6">
+            <Link href={`/login?auth_error=${encodeURIComponent(error)}`}>
+              <Button type="button" variant="secondary" className="w-full">
+                Back to sign in
+              </Button>
+            </Link>
+          </div>
+        ) : null}
       </Card>
     </div>
   )

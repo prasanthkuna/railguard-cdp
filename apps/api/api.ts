@@ -61,7 +61,9 @@ import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment
 import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
 import {
   authenticateWorkOSPassword,
+  bindWorkOSSessionToOrganization,
   createWorkOSOrganization,
+  createWorkOSPasswordUser,
   defaultWorkOSOrganizationID,
   exchangeWorkOSCode,
   extractInvoiceDocument,
@@ -75,6 +77,7 @@ import {
   sendNotification,
   sha256Buffer,
   verifyWorkOSWebhook,
+  workosErrorMessage,
 } from "./providers"
 import { evaluatePaymentGuard, isX402GuardEnabled } from "./x402Guard"
 import { assertExecutionAllowed } from "./executionSafety"
@@ -250,6 +253,14 @@ interface WorkOSPasswordRequest {
   email: string
   password: string
   organizationID?: string
+}
+
+interface WorkOSSignupRequest {
+  email: string
+  password: string
+  organizationID?: string
+  firstName?: string
+  lastName?: string
 }
 
 interface WorkOSRefreshRequest {
@@ -1271,14 +1282,17 @@ export const workosAuthorize = api(
     url: string
     state: string
     codeVerifier: string
-  }> =>
-    getWorkOSAuthorizationURL({
+  }> => {
+    const provider = params.provider ?? "GoogleOAuth"
+    return getWorkOSAuthorizationURL({
       redirectURI: params.redirectURI,
-      organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
-      provider: params.provider ?? "GoogleOAuth",
+      // Never attach org for GoogleOAuth — WorkOS treats that as SSO connection lookup.
+      organizationID: provider === "GoogleOAuth" ? undefined : params.organizationID,
+      provider,
       screenHint: params.screenHint,
       loginHint: params.loginHint,
-    }),
+    })
+  },
 )
 
 async function finalizeWorkOSSession(session: {
@@ -1286,7 +1300,7 @@ async function finalizeWorkOSSession(session: {
   refreshToken: string
   sealedSession?: string
   organizationID?: string
-  user: { id: string; email: string }
+  user: { id: string; email: string; firstName?: string; lastName?: string }
 }): Promise<{
   accessToken: string
   refreshToken: string
@@ -1295,32 +1309,43 @@ async function finalizeWorkOSSession(session: {
   userID: string
   email: string
 }> {
-  const organizationID = session.organizationID ?? defaultWorkOSOrganizationID()
-  await ensureLocalIdentity({
-    organizationID,
-    userID: session.user.id,
-    email: session.user.email,
-    role: "owner",
-  })
-  return {
+  const bound = await bindWorkOSSessionToOrganization({
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
     sealedSession: session.sealedSession,
-    organizationID,
-    userID: session.user.id,
-    email: session.user.email,
+    organizationID: session.organizationID ?? defaultWorkOSOrganizationID(),
+    user: session.user,
+  })
+
+  await ensureLocalIdentity({
+    organizationID: bound.organizationID,
+    userID: bound.user.id,
+    email: bound.user.email,
+    role: "owner",
+  })
+  return {
+    accessToken: bound.accessToken,
+    refreshToken: bound.refreshToken,
+    sealedSession: bound.sealedSession,
+    organizationID: bound.organizationID,
+    userID: bound.user.id,
+    email: bound.user.email,
   }
 }
 
 export const workosExchange = api(
   { expose: true, method: "POST", path: "/auth/workos/exchange", sensitive: true },
   async (params: WorkOSExchangeRequest) => {
-    const session = await exchangeWorkOSCode({
-      code: params.code,
-      redirectURI: params.redirectURI,
-      codeVerifier: params.codeVerifier,
-    })
-    return finalizeWorkOSSession(session)
+    try {
+      const session = await exchangeWorkOSCode({
+        code: params.code,
+        redirectURI: params.redirectURI,
+        codeVerifier: params.codeVerifier,
+      })
+      return finalizeWorkOSSession(session)
+    } catch (error) {
+      throw APIError.unauthenticated(workosErrorMessage(error, "Failed to complete sign-in"))
+    }
   },
 )
 
@@ -1338,8 +1363,43 @@ export const workosPassword = api(
       })
       return finalizeWorkOSSession(session)
     } catch (error) {
+      throw APIError.unauthenticated(workosErrorMessage(error, "Invalid email or password"))
+    }
+  },
+)
+
+export const workosSignup = api(
+  { expose: true, method: "POST", path: "/auth/workos/signup", sensitive: true },
+  async (params: WorkOSSignupRequest) => {
+    if (!params.email?.trim() || !params.password) {
+      throw APIError.invalidArgument("email and password are required")
+    }
+    if (params.password.length < 8) {
+      throw APIError.invalidArgument("password must be at least 8 characters")
+    }
+
+    try {
+      await createWorkOSPasswordUser({
+        email: params.email,
+        password: params.password,
+        firstName: params.firstName,
+        lastName: params.lastName,
+      })
+    } catch (error) {
+      if (error instanceof APIError) throw error
+      throw APIError.invalidArgument(workosErrorMessage(error, "Unable to create account"))
+    }
+
+    try {
+      const session = await authenticateWorkOSPassword({
+        email: params.email,
+        password: params.password,
+        organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
+      })
+      return finalizeWorkOSSession(session)
+    } catch (error) {
       throw APIError.unauthenticated(
-        error instanceof Error ? error.message : "Invalid email or password",
+        workosErrorMessage(error, "Account created but sign-in failed. Try signing in."),
       )
     }
   },
@@ -1361,9 +1421,7 @@ export const workosRefresh = api(
         user: session.user,
       })
     } catch (error) {
-      throw APIError.unauthenticated(
-        error instanceof Error ? error.message : "Session refresh failed",
-      )
+      throw APIError.unauthenticated(workosErrorMessage(error, "Session refresh failed"))
     }
   },
 )
