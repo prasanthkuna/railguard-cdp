@@ -369,9 +369,20 @@ async function listInvoices() {
   return api<{ invoices: Invoice[] }>("/invoices")
 }
 
-async function findInvoiceByNumber(invoiceNumber: string): Promise<Invoice | null> {
+async function findInvoiceByNumber(
+  invoiceNumber: string,
+  preferStatuses?: InvoiceStatus[],
+): Promise<Invoice | null> {
   const response = await listInvoices()
-  return response.invoices.find((invoice) => invoice.invoiceNumber === invoiceNumber) ?? null
+  const matches = response.invoices.filter((invoice) => invoice.invoiceNumber === invoiceNumber)
+  if (matches.length === 0) return null
+  if (preferStatuses?.length) {
+    for (const status of preferStatuses) {
+      const hit = matches.find((invoice) => invoice.status === status)
+      if (hit) return hit
+    }
+  }
+  return matches.find((invoice) => invoice.status !== "blocked") ?? matches[0] ?? null
 }
 
 async function evaluateInvoice(invoiceID: string) {
@@ -801,25 +812,31 @@ async function runShowcase(): Promise<void> {
   const cheatSheet: Record<string, { invoiceNumber: string; invoiceID: string; status: string; story: string }> =
     {}
 
-  // Ready / allow (also used for executed payment — SoD-safe, no prior approval)
-  logStep("allow", "Northline NL-4821")
+  // Ready / allow (simulator target — keep unique; do not reuse for block/pay)
+  logStep("allow", "Northline NL-5101")
   const allow = await ensureManualInvoice({
-    invoiceNumber: "NL-4821",
+    invoiceNumber: "NL-5101",
     vendor: northline,
     amountBaseUnits: "2500000000",
     walletAddress: "0x1111111111111111111111111111111111111111",
     paymentMemo: "Q3 freight settlement",
-    documentHash: "sha256:showcase-nl-4821",
+    documentHash: "sha256:showcase-nl-5101",
   })
-  assert(allow.policyRun.result === "allow" || allow.invoice.status === "ready" || allow.invoice.status === "executed" || allow.invoice.status === "payment_intent_created", "NL-4821 should allow")
+  assert(
+    allow.policyRun.result === "allow" ||
+      allow.invoice.status === "ready" ||
+      allow.invoice.status === "executed" ||
+      allow.invoice.status === "payment_intent_created",
+    "NL-5101 should allow",
+  )
   cheatSheet.allowReady = {
-    invoiceNumber: "NL-4821",
+    invoiceNumber: "NL-5101",
     invoiceID: allow.invoice.id,
     status: allow.invoice.status,
     story: "Clean auto-pass / Policy Simulator",
   }
 
-  logStep("simulate", "threshold flip on NL-4821")
+  logStep("simulate", "threshold flip on NL-5101")
   const simulated = await api<{ policyRun: PolicyRun }>("/policy/simulate", {
     body: {
       invoiceID: allow.invoice.id,
@@ -831,7 +848,7 @@ async function runShowcase(): Promise<void> {
       walletRiskThreshold: 80,
     },
   })
-  assert(simulated.policyRun.result === "escalate", "Simulation should escalate NL-4821")
+  assert(simulated.policyRun.result === "escalate", "Simulation should escalate NL-5101")
 
   // Needs approval (leave open)
   logStep("escalate", "Helix HX-1904 needs approval")
@@ -869,19 +886,27 @@ async function runShowcase(): Promise<void> {
     }
   }
 
-  // Duplicate + wallet change → block
-  logStep("block", "duplicate NL-4821 with wallet change")
+  // Duplicate + wallet change → block (separate number so allow/pay stay clean)
+  logStep("block", "Northline NL-5102 duplicate with wallet change")
+  const blockBase = await ensureManualInvoice({
+    invoiceNumber: "NL-5102",
+    vendor: northline,
+    amountBaseUnits: "2500000000",
+    walletAddress: "0x1111111111111111111111111111111111111111",
+    paymentMemo: "Lane surcharge adjustment",
+    documentHash: "sha256:showcase-nl-5102",
+  })
   let blocked = (await listInvoices()).invoices.find(
     (invoice) =>
-      invoice.invoiceNumber === "NL-4821" &&
-      invoice.id !== allow.invoice.id &&
+      invoice.invoiceNumber === "NL-5102" &&
+      invoice.id !== blockBase.invoice.id &&
       invoice.status === "blocked",
   )
   if (!blocked) {
     const blockedCreate = await createInvoice({
       vendorID: northline.id,
-      invoiceNumber: "NL-4821",
-      documentHash: "sha256:showcase-nl-4821-dup-wallet",
+      invoiceNumber: "NL-5102",
+      documentHash: "sha256:showcase-nl-5102-dup-wallet",
       amountBaseUnits: "2500000000",
       token: "usdc",
       chain: "base-sepolia",
@@ -893,7 +918,7 @@ async function runShowcase(): Promise<void> {
     blocked = blockedCreate.invoice
   }
   cheatSheet.blocked = {
-    invoiceNumber: "NL-4821",
+    invoiceNumber: "NL-5102",
     invoiceID: blocked!.id,
     status: blocked!.status,
     story: "Dashboard Blocked (duplicate + wallet change)",
@@ -997,14 +1022,22 @@ async function runShowcase(): Promise<void> {
     story: "Ready to Execute CTA",
   }
 
-  // Execute payment on allow invoice (NL-4821) — no SoD conflict
-  logStep("execute", "Northline NL-4821 payment")
-  let paidInvoice = (await getInvoice(allow.invoice.id)).invoice
+  // Execute payment on a dedicated allow invoice — no SoD conflict, no duplicate taint
+  logStep("execute", "Northline NL-5103 payment")
+  const paySeed = await ensureManualInvoice({
+    invoiceNumber: "NL-5103",
+    vendor: northline,
+    amountBaseUnits: "2750000000",
+    walletAddress: "0x1111111111111111111111111111111111111111",
+    paymentMemo: "Contract haul week 31",
+    documentHash: "sha256:showcase-nl-5103",
+  })
+  let paidInvoice = paySeed.invoice
   if (paidInvoice.status === "ready") {
     const intent = await api<{ paymentIntent: PaymentIntent }>("/payment-intents", {
       body: {
         invoiceID: paidInvoice.id,
-        idempotencyKey: "intent-nl-4821",
+        idempotencyKey: "intent-nl-5103",
       },
     })
     const executed = await api<{ paymentIntent: PaymentIntent }>(
@@ -1012,32 +1045,38 @@ async function runShowcase(): Promise<void> {
       {
         body: {
           id: intent.paymentIntent.id,
-          idempotencyKey: "execute-nl-4821",
+          idempotencyKey: "execute-nl-5103",
         },
       },
     )
     assert(
       executed.paymentIntent.status === "executed" ||
         executed.paymentIntent.status === "confirmed",
-      "NL-4821 execution should succeed",
+      "NL-5103 execution should succeed",
     )
-    assert(executed.paymentIntent.txHash, "Expected tx hash on NL-4821")
+    assert(executed.paymentIntent.txHash, "Expected tx hash on NL-5103")
     paidInvoice = (await getInvoice(paidInvoice.id)).invoice
   } else if (paidInvoice.status === "payment_intent_created") {
     const detail = await getInvoice(paidInvoice.id)
     const intent = detail.paymentIntents.find((item) => item.status === "prepared")
     if (intent) {
       await api<{ paymentIntent: PaymentIntent }>(`/payment-intents/${intent.id}/execute`, {
-        body: { id: intent.id, idempotencyKey: "execute-nl-4821" },
+        body: { id: intent.id, idempotencyKey: "execute-nl-5103" },
       })
       paidInvoice = (await getInvoice(paidInvoice.id)).invoice
     }
   }
   cheatSheet.executed = {
-    invoiceNumber: "NL-4821",
+    invoiceNumber: "NL-5103",
     invoiceID: paidInvoice.id,
     status: paidInvoice.status,
     story: "Executed payment + audit trail",
+  }
+  cheatSheet.allowReady = {
+    invoiceNumber: "NL-5101",
+    invoiceID: allow.invoice.id,
+    status: (await getInvoice(allow.invoice.id)).invoice.status,
+    story: "Clean auto-pass / Policy Simulator",
   }
 
   // Upload extraction story
