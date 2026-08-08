@@ -1,0 +1,19 @@
+{
+  "name": "@railguard/kernel",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "@railguard/cdp": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./lifecycle": "./src/lifecycle.ts",
+    "./reconciliation": "./src/reconciliation.ts",
+    "./correlation": "./src/correlation.ts",
+    "./cdpDriver": "./src/cdpDriver.ts",
+    "./executionDriver": "./src/executionDriver.ts",
+    "./domain": "./src/domain.ts",
+    "./vaultDriver": "./src/vaultDriver.ts"
+  }
+}
