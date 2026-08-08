@@ -7,12 +7,19 @@
   "engines": {
     "node": "20"
   },
-  "workspaces": ["apps/api", "apps/web", "packages/*", "encore.gen"],
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "apps/video",
+    "packages/*",
+    "vendor/x402-guard/packages/*",
+    "encore.gen"
+  ],
   "overrides": {
-    "@x402-guard/core": "file:./x402-guard/packages/core",
-    "@x402-guard/policy": "file:./x402-guard/packages/policy",
-    "@x402-guard/middleware": "file:./x402-guard/packages/middleware",
-    "@x402-guard/receipts": "file:./x402-guard/packages/receipts"
+    "@x402-guard/core": "workspace:*",
+    "@x402-guard/policy": "workspace:*",
+    "@x402-guard/middleware": "workspace:*",
+    "@x402-guard/receipts": "workspace:*"
   },
   "scripts": {
     "check": "bun run lint && bun run test && bun run typecheck",
@@ -40,11 +47,15 @@
     "gate-d-evidence": "bun run scripts/gate-d-evidence.ts",
     "test:testnet": "cross-env TESTNET_INTEGRATION=1 bun test packages/settlement/src/base-sepolia.integration.test.ts",
     "dev:web": "bun run --filter @railguard/web dev",
-    "dev:api": "encore run"
+    "dev:api": "powershell -NoProfile -Command \"$env:PAYMENT_MODE='demo'; $env:ALLOW_DEV_HEADER_AUTH='true'; $env:X402_GUARD_ENABLED='false'; encore run\""
   },
   "dependencies": {
     "@coinbase/cdp-sdk": "^1.48.2",
     "@workos-inc/node": "^9.1.0",
+    "@x402-guard/core": "workspace:*",
+    "@x402-guard/middleware": "workspace:*",
+    "@x402-guard/policy": "workspace:*",
+    "@x402-guard/receipts": "workspace:*",
     "~encore": "workspace:*",
     "bs58": "^6.0.0",
     "encore.dev": "1.56.6",
@@ -54,6 +65,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "playwright": "^1.52.0"
+    "playwright": "^1.52.0",
+    "puppeteer-core": "^25.3.0"
   }
 }

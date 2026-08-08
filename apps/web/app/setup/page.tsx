@@ -33,38 +33,23 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--rg-surface-subtle)] p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--rg-surface-secondary)]">
-            <ShieldCheck className="h-6 w-6 text-[var(--rg-brand)]" />
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-[var(--rg-shadow-md)]">
+        <CardHeader className="items-center text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--rg-brand)]">
+            <ShieldCheck className="h-7 w-7 text-white" />
           </div>
-          <CardTitle>Welcome to Railguard</CardTitle>
+          <CardTitle className="text-2xl">Welcome to PreBroadcast</CardTitle>
           <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
             Create your operations workspace to enforce payment controls.
           </p>
         </CardHeader>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <Input
-            label="Workspace Name"
-            placeholder="Example: Apex Treasury Ops"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            autoFocus
-          />
-          <Input
-            label="Owner Email (optional)"
-            type="email"
-            placeholder="finance-ops@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          {error && <p className="text-sm text-[var(--rg-status-block)]">{error}</p>}
-
-          <Button type="submit" className="w-full" isLoading={loading} disabled={!name.trim()}>
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+          <Input label="Workspace Name" placeholder="Example: Apex Treasury Ops" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+          <Input label="Owner Email (optional)" type="email" placeholder="finance-ops@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          {error ? <p className="text-sm text-[var(--rg-state-regret)]">{error}</p> : null}
+          <Button type="submit" variant="primary" className="w-full" isLoading={loading} disabled={!name.trim()}>
             Initialize Workspace
           </Button>
         </form>

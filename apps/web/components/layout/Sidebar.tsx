@@ -3,31 +3,32 @@
 import { FileText, History, LayoutDashboard, Settings, ShieldCheck, Users } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import * as React from "react"
+import { cn } from "../../lib/cn"
+
+const navItems = [
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/invoices", label: "Invoices", icon: FileText },
+  { href: "/vendors", label: "Vendors", icon: Users },
+  { href: "/audit", label: "Audit Trail", icon: History },
+  { href: "/settings", label: "Settings", icon: Settings },
+]
 
 export function Sidebar() {
   const pathname = usePathname()
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/invoices", label: "Invoices", icon: FileText },
-    { href: "/vendors", label: "Vendors", icon: Users },
-    { href: "/audit", label: "Audit Trail", icon: History },
-    { href: "/settings", label: "Settings", icon: Settings },
-  ]
-
   return (
-    <div className="flex h-full w-64 flex-col border-r border-[var(--rg-border)] bg-[var(--rg-surface-light)]">
-      <div className="flex h-16 items-center px-6">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-6 w-6 text-[var(--rg-brand)]" />
-          <span className="text-xl font-display font-semibold tracking-tight text-[var(--rg-text-primary)]">
-            Railguard
-          </span>
+    <aside className="hidden h-full w-[260px] shrink-0 flex-col border-r border-[var(--rg-border)] bg-[var(--rg-bg-base)] lg:flex">
+      <div className="flex h-16 items-center gap-3 border-b border-[var(--rg-border)] px-5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[var(--rg-radius-md)] bg-[var(--rg-brand)]">
+          <ShieldCheck className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <p className="rg-headline text-[var(--rg-text-primary)]">PreBroadcast</p>
+          <p className="rg-caption text-[var(--rg-text-muted)]">Built on Coinbase Developer Platform</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-4 py-4">
+      <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
@@ -35,14 +36,18 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={cn(
+                "group flex items-center gap-3 rounded-[var(--rg-radius-md)] px-3 py-2.5 rg-label-2 transition",
                 isActive
-                  ? "bg-[var(--rg-surface-secondary)] text-[var(--rg-brand)]"
-                  : "text-[var(--rg-text-muted)] hover:bg-[var(--rg-surface-secondary)] hover:text-[var(--rg-text-primary)]"
-              }`}
+                  ? "bg-[var(--rg-bg-primary-wash)] text-[var(--rg-brand)]"
+                  : "text-[var(--rg-text-secondary)] hover:bg-[var(--rg-bg-hover)] hover:text-[var(--rg-text-primary)]",
+              )}
             >
               <item.icon
-                className={`h-5 w-5 ${isActive ? "text-[var(--rg-brand)]" : "text-[var(--rg-text-muted)]"}`}
+                className={cn(
+                  "h-4 w-4 shrink-0",
+                  isActive ? "text-[var(--rg-brand)]" : "text-[var(--rg-text-muted)] group-hover:text-[var(--rg-text-secondary)]",
+                )}
               />
               {item.label}
             </Link>
@@ -50,17 +55,16 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4">
-        <div className="rounded-md bg-[var(--rg-surface-card-dark)] p-4 text-white">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Environment
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-sm">Base Sepolia</span>
+      <div className="border-t border-[var(--rg-border)] p-4">
+        <div className="rounded-[var(--rg-radius-lg)] bg-[var(--rg-bg-primary-wash)] p-4">
+          <p className="rg-caption text-[var(--rg-brand)]">Network</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--rg-state-joy)]" />
+            <span className="rg-label-1 text-[var(--rg-text-primary)]">Base Sepolia</span>
           </div>
+          <p className="rg-legal mt-2 text-[var(--rg-text-muted)]">Demo settlement mode</p>
         </div>
       </div>
-    </div>
+    </aside>
   )
 }

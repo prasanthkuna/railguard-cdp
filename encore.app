@@ -9,7 +9,9 @@
       "http://localhost:3000",
       "http://127.0.0.1:3000",
       "https://web-ruddy-three-69.vercel.app",
-      "https://coinbase-eight-xi.vercel.app",
+      "https://web-prasanthkunas-projects.vercel.app",
+      "https://prebroadcast.vercel.app",
+      "https://prebroadcast-prasanthkunas-projects.vercel.app",
       "https://*.vercel.app"
     ]
   }

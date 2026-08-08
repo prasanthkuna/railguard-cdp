@@ -1,7 +1,7 @@
-import type { GuardDecision } from "@x402-guard/core"
-import { parseResourceUrl } from "@x402-guard/core"
-import { X402Guard, defaultDevPolicy } from "@x402-guard/middleware"
-import type { PaymentReceipt } from "@x402-guard/middleware"
+import type { GuardDecision } from "../../vendor/x402-guard/packages/core/src/index"
+import { parseResourceUrl } from "../../vendor/x402-guard/packages/core/src/index"
+import { X402Guard, defaultDevPolicy } from "../../vendor/x402-guard/packages/middleware/src/index"
+import type { PaymentReceipt } from "../../vendor/x402-guard/packages/middleware/src/index"
 import { DbGuardStateStore } from "./x402GuardDbStore"
 
 const guards = new Map<string, X402Guard>()

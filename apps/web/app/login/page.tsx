@@ -38,27 +38,25 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--rg-surface-subtle)] px-6 py-10">
-      <Card className="w-full max-w-lg">
+    <div className="flex min-h-screen items-center justify-center px-6 py-10">
+      <Card className="relative w-full max-w-lg shadow-[var(--rg-shadow-md)]">
         <CardHeader className="items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--rg-surface-secondary)]">
-            <ShieldCheck className="h-7 w-7 text-[var(--rg-brand)]" />
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--rg-brand)]">
+            <ShieldCheck className="h-7 w-7 text-white" />
           </div>
-          <CardTitle>Sign in to Railguard</CardTitle>
+          <CardTitle className="text-2xl">Sign in to PreBroadcast</CardTitle>
           <p className="max-w-md text-sm text-[var(--rg-text-muted)]">
-            Use your WorkOS organization session to access invoice review, approvals, and audit
-            workflows.
+            Secure invoice review, approvals, and audit — styled with Coinbase Design System colors.
           </p>
         </CardHeader>
 
         <div className="space-y-4">
-          <Button type="button" className="w-full" isLoading={loading} onClick={handleSignIn}>
+          <Button type="button" variant="primary" className="w-full" isLoading={loading} onClick={handleSignIn}>
             Continue with WorkOS
           </Button>
-          {error ? <p className="text-sm text-[var(--rg-status-block)]">{error}</p> : null}
+          {error ? <p className="text-sm text-[var(--rg-state-regret)]">{error}</p> : null}
           <p className="text-xs text-[var(--rg-text-muted)]">
-            If sign-in fails, confirm `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and your callback URL
-            are configured in Encore and Vercel.
+            If sign-in fails, confirm WorkOS keys and your callback URL are configured.
           </p>
         </div>
       </Card>

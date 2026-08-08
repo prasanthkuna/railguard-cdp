@@ -7,9 +7,11 @@
     "node": "20"
   },
   "dependencies": {
-    "@x402-guard/core": "file:../../x402-guard/packages/core",
-    "@x402-guard/middleware": "file:../../x402-guard/packages/middleware",
-    "@x402-guard/policy": "file:../../x402-guard/packages/policy"
+    "@x402-guard/core": "workspace:*",
+    "@x402-guard/middleware": "workspace:*",
+    "@x402-guard/policy": "workspace:*",
+    "@x402-guard/receipts": "workspace:*",
+    "@railguard/kernel": "workspace:*"
   },
   "scripts": {
     "dev": "encore run",

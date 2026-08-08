@@ -1,12 +1,18 @@
 # dependencies
 node_modules/
-x402-guard/
+# Local junction to sibling repo (not Cloud). Vendored copy lives in vendor/x402-guard.
+/x402-guard/
+!vendor/x402-guard/
+!vendor/x402-guard/**
 
 # build outputs
 .next/
 dist/
+!vendor/x402-guard/**/dist/
+!vendor/x402-guard/**/dist/**
 build/
 coverage/
+vendor/**/node_modules/
 .turbo/
 *.tsbuildinfo
 
@@ -58,3 +64,6 @@ scripts/finalize-*.ts
 scripts/generate-campaign-assets.ts
 scripts/render-*.ps1
 scripts/save-shot.ts
+
+vendor/**/node_modules/
+

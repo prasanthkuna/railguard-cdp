@@ -1,11 +1,12 @@
-# Railguard CDP
+# PreBroadcast
 
 [![tests](https://img.shields.io/badge/API%20tests-bun%20passing-green)](./apps/api/payment-state.test.ts)
 [![evidence](https://img.shields.io/badge/evidence-Base%20Sepolia%20live-blue)](https://github.com/prasanthkuna/railguard-new/tree/master/evidence/cdp-base-sepolia)
 [![status](https://img.shields.io/badge/status-reference%20implementation-lightgrey)](https://github.com/prasanthkuna/railguard-new/blob/master/docs/RELEASE_v0.1-reference.md)
 
-**Enterprise execution and reconciliation** — invoice-to-USDC on Base Sepolia via Coinbase CDP.
+**Policy before USDC broadcast** — invoice-to-USDC on Base Sepolia via Coinbase CDP.
 
+> **Live demo (free):** `https://prebroadcast.vercel.app` · API: `https://staging-railguard-s4ii.encr.app`  
 > **Portfolio:** [railguard-new/evidence](https://github.com/prasanthkuna/railguard-new/tree/master/evidence) — public proof index.
 
 ## Four-layer stack
@@ -14,7 +15,7 @@
 Agent Payment Failure Lab   → adversarial profiles (APF-003, APF-004, APF-005)
 x402-guard                  → pre-payment authorization and budget reservation
 railguard-new               → on-chain session enforcement (SignGate + hook)
-railguard-cdp (this repo)   → CDP execution, settlement verification, reconciliation
+PreBroadcast (this repo)    → CDP execution, settlement verification, reconciliation
 ```
 
 ## What this repo proves
