@@ -60,13 +60,16 @@ import { addQuote, createPurchase } from "./purchaseService"
 import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
 import {
+  authenticateWorkOSPassword,
   createWorkOSOrganization,
+  defaultWorkOSOrganizationID,
   exchangeWorkOSCode,
   extractInvoiceDocument,
   fetchWorkOSOrganization,
   fetchWorkOSUser,
   getWorkOSAuthorizationURL,
   hasWorkOSConfig,
+  refreshWorkOSSession,
   rejectIfUnsafeDocument,
   resolveCdpPayerAddress,
   sendNotification,
@@ -232,12 +235,26 @@ interface AuditExportRequest {
 interface WorkOSAuthorizeRequest {
   redirectURI: string
   organizationID?: string
+  provider?: "authkit" | "GoogleOAuth"
+  screenHint?: "sign-in" | "sign-up"
+  loginHint?: string
 }
 
 interface WorkOSExchangeRequest {
   code: string
   redirectURI: string
   codeVerifier?: string
+}
+
+interface WorkOSPasswordRequest {
+  email: string
+  password: string
+  organizationID?: string
+}
+
+interface WorkOSRefreshRequest {
+  refreshToken: string
+  organizationID?: string
 }
 
 interface ApprovalRecord {
@@ -1257,40 +1274,96 @@ export const workosAuthorize = api(
   }> =>
     getWorkOSAuthorizationURL({
       redirectURI: params.redirectURI,
-      organizationID: params.organizationID,
+      organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
+      provider: params.provider ?? "GoogleOAuth",
+      screenHint: params.screenHint,
+      loginHint: params.loginHint,
     }),
 )
 
+async function finalizeWorkOSSession(session: {
+  accessToken: string
+  refreshToken: string
+  sealedSession?: string
+  organizationID?: string
+  user: { id: string; email: string }
+}): Promise<{
+  accessToken: string
+  refreshToken: string
+  sealedSession?: string
+  organizationID?: string
+  userID: string
+  email: string
+}> {
+  const organizationID = session.organizationID ?? defaultWorkOSOrganizationID()
+  await ensureLocalIdentity({
+    organizationID,
+    userID: session.user.id,
+    email: session.user.email,
+    role: "owner",
+  })
+  return {
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+    sealedSession: session.sealedSession,
+    organizationID,
+    userID: session.user.id,
+    email: session.user.email,
+  }
+}
+
 export const workosExchange = api(
   { expose: true, method: "POST", path: "/auth/workos/exchange", sensitive: true },
-  async (
-    params: WorkOSExchangeRequest,
-  ): Promise<{
-    accessToken: string
-    refreshToken: string
-    sealedSession?: string
-    organizationID?: string
-    userID: string
-    email: string
-  }> => {
+  async (params: WorkOSExchangeRequest) => {
     const session = await exchangeWorkOSCode({
       code: params.code,
       redirectURI: params.redirectURI,
       codeVerifier: params.codeVerifier,
     })
-    await ensureLocalIdentity({
-      organizationID: session.organizationID,
-      userID: session.user.id,
-      email: session.user.email,
-      role: "viewer",
-    })
-    return {
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
-      sealedSession: session.sealedSession,
-      organizationID: session.organizationID,
-      userID: session.user.id,
-      email: session.user.email,
+    return finalizeWorkOSSession(session)
+  },
+)
+
+export const workosPassword = api(
+  { expose: true, method: "POST", path: "/auth/workos/password", sensitive: true },
+  async (params: WorkOSPasswordRequest) => {
+    if (!params.email?.trim() || !params.password) {
+      throw APIError.invalidArgument("email and password are required")
+    }
+    try {
+      const session = await authenticateWorkOSPassword({
+        email: params.email,
+        password: params.password,
+        organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
+      })
+      return finalizeWorkOSSession(session)
+    } catch (error) {
+      throw APIError.unauthenticated(
+        error instanceof Error ? error.message : "Invalid email or password",
+      )
+    }
+  },
+)
+
+export const workosRefresh = api(
+  { expose: true, method: "POST", path: "/auth/workos/refresh", sensitive: true },
+  async (params: WorkOSRefreshRequest) => {
+    if (!params.refreshToken?.trim()) {
+      throw APIError.invalidArgument("refreshToken is required")
+    }
+    try {
+      const session = await refreshWorkOSSession({
+        refreshToken: params.refreshToken,
+        organizationID: params.organizationID ?? defaultWorkOSOrganizationID(),
+      })
+      return finalizeWorkOSSession({
+        ...session,
+        user: session.user,
+      })
+    } catch (error) {
+      throw APIError.unauthenticated(
+        error instanceof Error ? error.message : "Session refresh failed",
+      )
     }
   },
 )

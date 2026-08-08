@@ -3,7 +3,7 @@
 import { ShieldCheck } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import * as React from "react"
-import { hasAuthSession, isDevAuthEnabled } from "../../lib/auth"
+import { hasAuthSession, isDevAuthEnabled, subscribeAuthChange } from "../../lib/auth"
 import { useIsClient } from "../../lib/hooks"
 import { Header } from "./Header"
 import { Sidebar } from "./Sidebar"
@@ -17,7 +17,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname === "/login" ||
     pathname === "/setup" ||
     pathname?.startsWith("/auth/callback")
-  const isAuthenticated = devAuthEnabled || hasAuthSession()
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    () => devAuthEnabled || (typeof window !== "undefined" && hasAuthSession()),
+  )
+
+  React.useEffect(() => {
+    if (devAuthEnabled) {
+      setIsAuthenticated(true)
+      return
+    }
+    const sync = () => setIsAuthenticated(hasAuthSession())
+    sync()
+    return subscribeAuthChange(sync)
+  }, [devAuthEnabled])
 
   React.useEffect(() => {
     if (isClient && !isPublicRoute && !isAuthenticated) {

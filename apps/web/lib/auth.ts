@@ -28,6 +28,7 @@ const DEFAULT_IDENTITY: DevIdentity = {
 const AUTH_SESSION_KEY = "railguard_auth_session"
 const WORKOS_STATE_KEY = "railguard_workos_state"
 const WORKOS_CODE_VERIFIER_KEY = "railguard_workos_code_verifier"
+const AUTH_CHANGE_EVENT = "railguard-auth-change"
 
 export function isDevAuthEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_ALLOW_DEV_AUTH === "true") return true
@@ -69,6 +70,22 @@ export function setDevIdentity(identity: DevIdentity) {
   }
 }
 
+function notifyAuthChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT))
+  }
+}
+
+export function subscribeAuthChange(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined
+  window.addEventListener(AUTH_CHANGE_EVENT, listener)
+  window.addEventListener("storage", listener)
+  return () => {
+    window.removeEventListener(AUTH_CHANGE_EVENT, listener)
+    window.removeEventListener("storage", listener)
+  }
+}
+
 export function getAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null
 
@@ -87,12 +104,14 @@ export function hasAuthSession(): boolean {
 export function setAuthSession(session: AuthSession) {
   if (typeof window !== "undefined") {
     localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session))
+    notifyAuthChange()
   }
 }
 
 export function clearAuthSession() {
   if (typeof window !== "undefined") {
     localStorage.removeItem(AUTH_SESSION_KEY)
+    notifyAuthChange()
   }
 }
 
@@ -120,6 +139,10 @@ export function clearWorkOSAuthFlow() {
   }
 }
 
+export function getConfiguredOrganizationID(): string | undefined {
+  return process.env.NEXT_PUBLIC_WORKOS_ORGANIZATION_ID?.trim() || undefined
+}
+
 export function getAuthHeaders(): HeadersInit {
   if (isDevAuthEnabled()) {
     const identity = getDevIdentity()
@@ -136,6 +159,8 @@ export function getAuthHeaders(): HeadersInit {
   const session = getAuthSession()
   return {
     ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
+    ...(session?.organizationID ? { "X-Organization-Id": session.organizationID } : {}),
+    ...(session?.email ? { "X-User-Email": session.email } : {}),
     "Content-Type": "application/json",
   }
 }

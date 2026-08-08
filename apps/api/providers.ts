@@ -39,6 +39,16 @@ const slackWebhookURL = secret("SLACK_WEBHOOK_URL")
 const workosIssuer = process.env.WORKOS_ISSUER?.trim() || "https://api.workos.com"
 const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3-flash-preview"
 
+/** Preferred tenant when AuthKit/password flows omit org selection. */
+export function defaultWorkOSOrganizationID(): string | undefined {
+  const value =
+    process.env.WORKOS_DEFAULT_ORGANIZATION_ID?.trim() ||
+    process.env.WORKOS_ORGANIZATION_ID?.trim() ||
+    // Staging PreBroadcast org — keeps JWT/org-less sessions tenant-bound.
+    "org_01KZG3PR1SQX5EPF94709V0GD2"
+  return value || undefined
+}
+
 export type { PaymentExecutionMode } from "./config"
 
 export async function waitForTransferConfirmation(txHash: string) {
@@ -220,17 +230,105 @@ async function getWorkOSJwks() {
   const clientId = workosClientID()
   if (!clientId) throw APIError.failedPrecondition("WORKOS_CLIENT_ID is not configured")
   if (!cachedJwks) {
-    cachedJwks = createRemoteJWKSet(new URL(`https://api.workos.com/sso/jwks/${clientId}`))
+    const workos = getWorkOS()
+    const jwksUrl =
+      typeof workos.userManagement.getJwksUrl === "function"
+        ? workos.userManagement.getJwksUrl(clientId)
+        : `https://api.workos.com/sso/jwks/${clientId}`
+    cachedJwks = createRemoteJWKSet(new URL(jwksUrl))
   }
   return cachedJwks
 }
 
-export async function verifyWorkOSAccessToken(token: string): Promise<VerifiedWorkOSToken> {
-  const jwks = await getWorkOSJwks()
-  const { payload } = await jwtVerify(token, jwks, {
-    issuer: workosIssuer,
-    audience: workosClientID(),
+function workosIssuerCandidates(clientId: string): string[] {
+  const configured = workosIssuer.replace(/\/$/, "")
+  return Array.from(
+    new Set([
+      configured,
+      `${configured}/`,
+      "https://api.workos.com",
+      "https://api.workos.com/",
+      `https://api.workos.com/user_management/${clientId}`,
+      `https://api.workos.com/user_management/${clientId}/`,
+    ]),
+  )
+}
+
+function mapWorkOSAuthResponse(response: {
+  accessToken: string
+  refreshToken: string
+  sealedSession?: string | null
+  organizationId?: string | null
+  user: {
+    id: string
+    email: string
+    firstName?: string | null
+    lastName?: string | null
+  }
+}): WorkOSExchangeResult {
+  return {
+    accessToken: response.accessToken,
+    refreshToken: response.refreshToken,
+    sealedSession: response.sealedSession ?? undefined,
+    organizationID: response.organizationId ?? undefined,
+    user: {
+      id: response.user.id,
+      email: response.user.email,
+      firstName: response.user.firstName ?? undefined,
+      lastName: response.user.lastName ?? undefined,
+    },
+  }
+}
+
+function pendingAuthenticationTokenFromError(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined
+  const record = error as Record<string, unknown>
+  const direct = record.pendingAuthenticationToken ?? record.pending_authentication_token
+  if (typeof direct === "string" && direct.length > 0) return direct
+  const rawData = record.rawData
+  if (rawData && typeof rawData === "object") {
+    const nested = rawData as Record<string, unknown>
+    const token = nested.pending_authentication_token ?? nested.pendingAuthenticationToken
+    if (typeof token === "string" && token.length > 0) return token
+  }
+  return undefined
+}
+
+async function completeWithOrganizationSelection(input: {
+  organizationID: string
+  pendingAuthenticationToken: string
+}): Promise<WorkOSExchangeResult> {
+  const workos = getWorkOS()
+  const response = await workos.userManagement.authenticateWithOrganizationSelection({
+    clientId: workosClientID(),
+    organizationId: input.organizationID,
+    pendingAuthenticationToken: input.pendingAuthenticationToken,
   })
+  return mapWorkOSAuthResponse(response)
+}
+
+export async function verifyWorkOSAccessToken(token: string): Promise<VerifiedWorkOSToken> {
+  const clientId = workosClientID()
+  if (!clientId) throw APIError.failedPrecondition("WORKOS_CLIENT_ID is not configured")
+
+  const jwks = await getWorkOSJwks()
+  // AuthKit access tokens often omit `aud` and put the app id in `client_id`.
+  // Requiring `audience` here clears every browser session on the first API call.
+  const { payload } = await jwtVerify(token, jwks, {
+    issuer: workosIssuerCandidates(clientId),
+  })
+
+  const tokenClientID =
+    typeof payload.client_id === "string"
+      ? payload.client_id
+      : typeof payload.aud === "string"
+        ? payload.aud
+        : Array.isArray(payload.aud)
+          ? payload.aud.find((value): value is string => typeof value === "string")
+          : undefined
+  if (tokenClientID && tokenClientID !== clientId) {
+    throw APIError.unauthenticated("WorkOS token client mismatch")
+  }
 
   return {
     userID: String(payload.sub ?? ""),
@@ -246,13 +344,18 @@ export async function verifyWorkOSAccessToken(token: string): Promise<VerifiedWo
 export async function getWorkOSAuthorizationURL(input: {
   redirectURI: string
   organizationID?: string
+  provider?: "authkit" | "GoogleOAuth"
+  screenHint?: "sign-in" | "sign-up"
+  loginHint?: string
 }): Promise<AuthURLResult> {
   const workos = getWorkOS()
   return workos.userManagement.getAuthorizationUrlWithPKCE({
-    provider: "authkit",
+    provider: input.provider ?? "GoogleOAuth",
     clientId: workosClientID(),
     redirectUri: input.redirectURI,
-    organizationId: input.organizationID,
+    organizationId: input.organizationID ?? defaultWorkOSOrganizationID(),
+    ...(input.provider === "authkit" && input.screenHint ? { screenHint: input.screenHint } : {}),
+    ...(input.loginHint ? { loginHint: input.loginHint } : {}),
   })
 }
 
@@ -262,25 +365,67 @@ export async function exchangeWorkOSCode(input: {
   codeVerifier?: string
 }): Promise<WorkOSExchangeResult> {
   const workos = getWorkOS()
-  const response = await workos.userManagement.authenticateWithCode({
-    code: input.code,
-    codeVerifier: input.codeVerifier,
-    clientId: workosClientID(),
-    redirectUri: input.redirectURI,
-  })
-
-  return {
-    accessToken: response.accessToken,
-    refreshToken: response.refreshToken,
-    sealedSession: response.sealedSession,
-    organizationID: response.organizationId,
-    user: {
-      id: response.user.id,
-      email: response.user.email,
-      firstName: response.user.firstName ?? undefined,
-      lastName: response.user.lastName ?? undefined,
-    },
+  try {
+    const response = await workos.userManagement.authenticateWithCode({
+      code: input.code,
+      codeVerifier: input.codeVerifier,
+      clientId: workosClientID(),
+      redirectUri: input.redirectURI,
+    })
+    return mapWorkOSAuthResponse(response)
+  } catch (error) {
+    const organizationID = defaultWorkOSOrganizationID()
+    const pendingAuthenticationToken = pendingAuthenticationTokenFromError(error)
+    if (organizationID && pendingAuthenticationToken) {
+      return completeWithOrganizationSelection({ organizationID, pendingAuthenticationToken })
+    }
+    throw error
   }
+}
+
+export async function authenticateWorkOSPassword(input: {
+  email: string
+  password: string
+  organizationID?: string
+  ipAddress?: string
+  userAgent?: string
+}): Promise<WorkOSExchangeResult> {
+  const workos = getWorkOS()
+  const organizationID = input.organizationID ?? defaultWorkOSOrganizationID()
+  try {
+    const response = await workos.userManagement.authenticateWithPassword({
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      clientId: workosClientID(),
+      ...(input.ipAddress ? { ipAddress: input.ipAddress } : {}),
+      ...(input.userAgent ? { userAgent: input.userAgent } : {}),
+    })
+    const mapped = mapWorkOSAuthResponse(response)
+    if (mapped.organizationID || !organizationID) return mapped
+
+    // Password grant succeeded without org claim — bind to the configured tenant locally.
+    return { ...mapped, organizationID }
+  } catch (error) {
+    const pendingAuthenticationToken = pendingAuthenticationTokenFromError(error)
+    if (organizationID && pendingAuthenticationToken) {
+      return completeWithOrganizationSelection({ organizationID, pendingAuthenticationToken })
+    }
+    throw error
+  }
+}
+
+export async function refreshWorkOSSession(input: {
+  refreshToken: string
+  organizationID?: string
+}): Promise<WorkOSExchangeResult> {
+  const workos = getWorkOS()
+  const organizationID = input.organizationID ?? defaultWorkOSOrganizationID()
+  const response = await workos.userManagement.authenticateWithRefreshToken({
+    clientId: workosClientID(),
+    refreshToken: input.refreshToken,
+    ...(organizationID ? { organizationId: organizationID } : {}),
+  })
+  return mapWorkOSAuthResponse(response)
 }
 
 export async function fetchWorkOSUser(userID: string) {

@@ -1,7 +1,13 @@
 import { APIError, Gateway, type Header } from "encore.dev/api"
 import { authHandler } from "encore.dev/auth"
 import { type AuthenticatedActor, isAppRole, normalizeAppRole } from "../../packages/auth/src"
-import { hasWorkOSConfig, isDevHeaderAuthEnabled, verifyWorkOSAccessToken } from "./providers"
+import { db } from "./db"
+import {
+  defaultWorkOSOrganizationID,
+  hasWorkOSConfig,
+  isDevHeaderAuthEnabled,
+  verifyWorkOSAccessToken,
+} from "./providers"
 
 interface AuthParams {
   authorization: Header<"Authorization">
@@ -13,6 +19,37 @@ interface AuthParams {
 
 export type AuthData = AuthenticatedActor
 
+async function resolveOrganizationID(input: {
+  userID: string
+  tokenOrganizationID?: string
+  headerOrganizationID?: string
+}): Promise<string | undefined> {
+  if (input.tokenOrganizationID) return input.tokenOrganizationID
+
+  const row = await db.queryRow<{ organization_id: string }>`
+    SELECT organization_id
+    FROM users
+    WHERE id = ${input.userID} OR workos_user_id = ${input.userID}
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+  if (row?.organization_id) return row.organization_id
+
+  const headerOrg = input.headerOrganizationID?.trim()
+  if (headerOrg) {
+    const membership = await db.queryRow<{ organization_id: string }>`
+      SELECT organization_id
+      FROM users
+      WHERE (id = ${input.userID} OR workos_user_id = ${input.userID})
+        AND organization_id = ${headerOrg}
+      LIMIT 1
+    `
+    if (membership?.organization_id) return membership.organization_id
+  }
+
+  return defaultWorkOSOrganizationID()
+}
+
 export const auth = authHandler<AuthParams, AuthData>(async (params) => {
   const token = params.authorization?.replace(/^Bearer\s+/i, "").trim()
   const devHeaderAuthEnabled = isDevHeaderAuthEnabled()
@@ -23,7 +60,16 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
   if (hasWorkOSConfig() && token.split(".").length === 3) {
     try {
       const verified = await verifyWorkOSAccessToken(token)
-      if (!verified.organizationID) {
+      if (!verified.userID) {
+        throw APIError.unauthenticated("WorkOS token missing subject")
+      }
+
+      const organizationID = await resolveOrganizationID({
+        userID: verified.userID,
+        tokenOrganizationID: verified.organizationID,
+        headerOrganizationID: params.organizationID,
+      })
+      if (!organizationID) {
         throw APIError.unauthenticated(
           "WorkOS token must include organization context; tenant headers are not accepted",
         )
@@ -31,12 +77,13 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
 
       return {
         userID: verified.userID,
-        organizationID: verified.organizationID,
+        organizationID,
         role: verified.role,
         email: params.email?.trim(),
       }
     } catch (error) {
       if (!devHeaderAuthEnabled || !params.organizationID) {
+        if (error instanceof APIError) throw error
         throw APIError.unauthenticated("invalid bearer token")
       }
     }

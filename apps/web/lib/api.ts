@@ -1,4 +1,10 @@
-import { clearAuthSession, getAuthHeaders, isDevAuthEnabled } from "./auth"
+import {
+  clearAuthSession,
+  getAuthHeaders,
+  getAuthSession,
+  isDevAuthEnabled,
+  setAuthSession,
+} from "./auth"
 import type {
   AddWalletRequest,
   AuditEvent,
@@ -30,7 +36,47 @@ function resolveApiUrl(): string {
   return process.env.ENCORE_API_URL || "http://localhost:4000"
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+let refreshInFlight: Promise<boolean> | null = null
+
+async function refreshAuthSession(): Promise<boolean> {
+  if (isDevAuthEnabled()) return false
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    const session = getAuthSession()
+    if (!session?.refreshToken) return false
+
+    try {
+      const res = await fetch(`${resolveApiUrl()}/auth/workos/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          refreshToken: session.refreshToken,
+          organizationID: session.organizationID,
+        }),
+      })
+      if (!res.ok) return false
+      const next = (await res.json()) as AuthExchangeResponse
+      setAuthSession({
+        accessToken: next.accessToken,
+        userID: next.userID,
+        email: next.email,
+        ...(next.refreshToken ? { refreshToken: next.refreshToken } : {}),
+        ...(next.sealedSession ? { sealedSession: next.sealedSession } : {}),
+        ...(next.organizationID ? { organizationID: next.organizationID } : {}),
+      })
+      return true
+    } catch {
+      return false
+    } finally {
+      refreshInFlight = null
+    }
+  })()
+
+  return refreshInFlight
+}
+
+async function apiFetch<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
   const res = await fetch(`${resolveApiUrl()}${path}`, {
     ...options,
     headers: {
@@ -40,19 +86,30 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
+    // Attempt a single silent refresh before clearing the session.
+    if (
+      allowRefresh &&
+      !isDevAuthEnabled() &&
+      res.status === 401 &&
+      !path.startsWith("/auth/workos/")
+    ) {
+      const refreshed = await refreshAuthSession()
+      if (refreshed) {
+        return apiFetch<T>(path, options, false)
+      }
+      clearAuthSession()
+    } else if (!isDevAuthEnabled() && res.status === 401 && !path.startsWith("/auth/workos/")) {
+      clearAuthSession()
+    }
+
     let message = "An error occurred"
     try {
       const err = await res.json()
       message = err.message || err.error || message
     } catch {}
-    // Only clear on 401 — 403 means authenticated but unauthorized for the action.
-    if (!isDevAuthEnabled() && res.status === 401) {
-      clearAuthSession()
-    }
     throw new Error(message)
   }
 
-  // Handle empty responses
   const text = await res.text()
   if (!text) return {} as T
 
@@ -61,15 +118,39 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // Auth
-  workosAuthorize: (redirectURI: string, organizationID?: string) =>
+  workosAuthorize: (
+    redirectURI: string,
+    organizationID?: string,
+    options?: {
+      provider?: "authkit" | "GoogleOAuth"
+      screenHint?: "sign-in" | "sign-up"
+      loginHint?: string
+    },
+  ) =>
     apiFetch<AuthURLResponse>("/auth/workos/authorize", {
       method: "POST",
-      body: JSON.stringify({ redirectURI, organizationID }),
+      body: JSON.stringify({
+        redirectURI,
+        organizationID,
+        provider: options?.provider ?? "GoogleOAuth",
+        screenHint: options?.screenHint,
+        loginHint: options?.loginHint,
+      }),
     }),
   workosExchange: (code: string, redirectURI: string, codeVerifier?: string) =>
     apiFetch<AuthExchangeResponse>("/auth/workos/exchange", {
       method: "POST",
       body: JSON.stringify({ code, redirectURI, codeVerifier }),
+    }),
+  workosPassword: (email: string, password: string, organizationID?: string) =>
+    apiFetch<AuthExchangeResponse>("/auth/workos/password", {
+      method: "POST",
+      body: JSON.stringify({ email, password, organizationID }),
+    }),
+  workosRefresh: (refreshToken: string, organizationID?: string) =>
+    apiFetch<AuthExchangeResponse>("/auth/workos/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken, organizationID }),
     }),
 
   // Workspace
