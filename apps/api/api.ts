@@ -1309,27 +1309,63 @@ async function finalizeWorkOSSession(session: {
   userID: string
   email: string
 }> {
-  const bound = await bindWorkOSSessionToOrganization({
+  const organizationID = session.organizationID ?? defaultWorkOSOrganizationID()
+
+  // Always persist local identity first so the browser can enter the app even if
+  // WorkOS membership/refresh is slow (Vercel rewrite timeouts return empty 200s).
+  await ensureLocalIdentity({
+    organizationID,
+    userID: session.user.id,
+    email: session.user.email,
+    role: "owner",
+  })
+
+  const fallback = {
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
     sealedSession: session.sealedSession,
-    organizationID: session.organizationID ?? defaultWorkOSOrganizationID(),
-    user: session.user,
-  })
+    organizationID,
+    userID: session.user.id,
+    email: session.user.email,
+  }
 
-  await ensureLocalIdentity({
-    organizationID: bound.organizationID,
-    userID: bound.user.id,
-    email: bound.user.email,
-    role: "owner",
-  })
-  return {
-    accessToken: bound.accessToken,
-    refreshToken: bound.refreshToken,
-    sealedSession: bound.sealedSession,
-    organizationID: bound.organizationID,
-    userID: bound.user.id,
-    email: bound.user.email,
+  if (!session.accessToken || !session.refreshToken) {
+    return fallback
+  }
+
+  try {
+    const bound = await Promise.race([
+      bindWorkOSSessionToOrganization({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+        sealedSession: session.sealedSession,
+        organizationID,
+        user: session.user,
+      }),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), 2500)
+      }),
+    ])
+
+    if (!bound?.accessToken) return fallback
+
+    await ensureLocalIdentity({
+      organizationID: bound.organizationID ?? organizationID,
+      userID: bound.user.id,
+      email: bound.user.email,
+      role: "owner",
+    })
+
+    return {
+      accessToken: bound.accessToken,
+      refreshToken: bound.refreshToken,
+      sealedSession: bound.sealedSession,
+      organizationID: bound.organizationID ?? organizationID,
+      userID: bound.user.id,
+      email: bound.user.email,
+    }
+  } catch {
+    return fallback
   }
 }
 
