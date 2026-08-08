@@ -25,13 +25,18 @@ import type {
   VendorWallet,
 } from "./types"
 
-/** Browser calls same-origin /api proxy (avoids CORS). Server uses Encore URL directly. */
+/** Browser calls Encore directly (avoids Vercel rewrite timeouts on slow WorkOS). Server uses Encore URL too. */
 function resolveApiUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL
   }
+  if (process.env.NEXT_PUBLIC_ENCORE_API_URL) {
+    return process.env.NEXT_PUBLIC_ENCORE_API_URL
+  }
   if (typeof window !== "undefined") {
-    return "/api"
+    // Staging Encore — CORS allowlist already includes prebroadcast.vercel.app.
+    // Same-origin /api rewrite silently returns empty 200 when upstream exceeds Vercel limits.
+    return "https://staging-railguard-s4ii.encr.app"
   }
   return process.env.ENCORE_API_URL || "http://localhost:4000"
 }
