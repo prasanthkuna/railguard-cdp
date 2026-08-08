@@ -59,7 +59,7 @@ describe("payment lifecycle adversarial profiles", () => {
     const seed = buildDemoExecutionSeed({
       organizationID: "org_1",
       paymentIntentId: "pi_1",
-      idempotencyKey: "idem_1",
+      providerIdempotencyKey: "idem_1",
       recipientAddress: "0x2222222222222222222222222222222222222222",
       amountBaseUnits: "1000000",
       chain: "base-sepolia",

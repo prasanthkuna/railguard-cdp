@@ -22,7 +22,19 @@ Minimum controls before sharing a public hosted URL.
 |----------|--------------|---------|
 | `NEXT_PUBLIC_ALLOW_DEV_AUTH` | `false` | Require WorkOS session |
 | `NEXT_PUBLIC_DEFAULT_ORG_ID` | demo org only | Tenant isolation |
+| `NEXT_PUBLIC_WORKOS_REDIRECT_URI` | `https://prebroadcast.vercel.app/auth/callback` | AuthKit callback |
+| `NEXT_PUBLIC_WORKOS_ORGANIZATION_ID` | WorkOS org id (e.g. PreBroadcast) | Force org context on tokens |
 | `NODE_ENV` | `production` | Disables dev auth by default |
+
+### WorkOS AuthKit (Dashboard → Applications → Redirects)
+
+Allowlist at least:
+
+- `https://prebroadcast.vercel.app/auth/callback` (default)
+- `http://localhost:3000/auth/callback`
+- `https://prebroadcast-prasanthkunas-projects.vercel.app/auth/callback`
+
+Ensure the operator user is a member of the WorkOS organization referenced by `NEXT_PUBLIC_WORKOS_ORGANIZATION_ID` so JWTs include `org_id`.
 
 ## Authentication behavior
 

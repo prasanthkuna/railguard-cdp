@@ -28,7 +28,8 @@ export default function LoginPage() {
     try {
       const redirectURI =
         process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || `${window.location.origin}/auth/callback`
-      const { url, state, codeVerifier } = await api.workosAuthorize(redirectURI)
+      const organizationID = process.env.NEXT_PUBLIC_WORKOS_ORGANIZATION_ID?.trim() || undefined
+      const { url, state, codeVerifier } = await api.workosAuthorize(redirectURI, organizationID)
       setWorkOSAuthFlow(state, codeVerifier)
       window.location.assign(url)
     } catch (error) {
@@ -56,7 +57,9 @@ export default function LoginPage() {
           </Button>
           {error ? <p className="text-sm text-[var(--rg-state-regret)]">{error}</p> : null}
           <p className="text-xs text-[var(--rg-text-muted)]">
-            If sign-in fails, confirm WorkOS keys and your callback URL are configured.
+            If sign-in fails, confirm WorkOS Redirect URIs include{" "}
+            <code className="text-[11px]">https://prebroadcast.vercel.app/auth/callback</code> and that your user
+            belongs to organization <code className="text-[11px]">PreBroadcast</code>.
           </p>
         </div>
       </Card>

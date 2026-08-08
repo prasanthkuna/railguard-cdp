@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto"
 
+export {
+  CDP_PROVIDER,
+  type CanonicalCdpTransferRequest,
+  buildCanonicalCdpTransferRequest,
+  hashCanonicalCdpRequest,
+  verifyCanonicalCdpRequest,
+} from "./cdpRequest"
+
 export interface PaymentExecutionRequest {
   recipientAddress: string
   amountBaseUnits: string

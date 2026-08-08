@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { APIError, type Query, api } from "encore.dev/api"
 import { getAuthData } from "encore.dev/internal/codegen/auth"
 import { Subscription } from "encore.dev/pubsub"
@@ -55,11 +55,13 @@ import {
 } from "./paymentExecution"
 import { transitionAfterSettlementVerification } from "./paymentReconciliation"
 import { isExecutionRetryBlocked, isIdempotentExecutionReturn } from "./paymentState"
+import { submitPersistedCdpTransfer } from "./cdpExecutionSubmit"
+import { addQuote, createPurchase } from "./purchaseService"
+import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
 import {
   createWorkOSOrganization,
   exchangeWorkOSCode,
-  executeCdpTransfer,
   extractInvoiceDocument,
   fetchWorkOSOrganization,
   fetchWorkOSUser,
@@ -732,13 +734,30 @@ export const createPaymentIntent = api(
       amountBaseUnits: invoice.amountBaseUnits,
       chain: invoice.chain,
     })
+    const purchase = await createPurchase({
+      organizationId: actor.organizationID,
+      businessIdempotencyKey: params.idempotencyKey,
+      merchantId: invoice.vendorID,
+    })
+    await addQuote({
+      purchaseId: purchase.id,
+      merchant: invoice.vendorID,
+      resource: `invoice:${invoice.id}`,
+      method: "POST",
+      requestBodyHash: createHash("sha256").update(stableStringify(payload)).digest("hex"),
+      network: invoice.chain,
+      token: invoice.token,
+      recipient: invoice.walletAddress,
+      amount: invoice.amountBaseUnits,
+      expiresAt: new Date(Date.now() + 3_600_000),
+    })
     const row = await db.queryRow<PaymentIntentRow>`
       INSERT INTO payment_intents (
-        id, organization_id, invoice_id, chain, token_address, recipient_address,
+        id, organization_id, invoice_id, purchase_id, chain, token_address, recipient_address,
         amount_base_units, payload_json, status, idempotency_key
       )
       VALUES (
-        ${id("pay")}, ${actor.organizationID}, ${invoice.id}, ${invoice.chain}, ${payload.tokenAddress},
+        ${id("pay")}, ${actor.organizationID}, ${invoice.id}, ${purchase.id}, ${invoice.chain}, ${payload.tokenAddress},
         ${invoice.walletAddress}, ${invoice.amountBaseUnits}, ${JSON.stringify(payload)}, 'prepared',
         ${params.idempotencyKey}
       )
@@ -808,7 +827,9 @@ export const executePaymentIntent = api(
       WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
     `
     if (!existing) throw APIError.notFound("payment intent not found")
-    if (existing.status === "executed") return { paymentIntent: mapPaymentIntent(existing) }
+    if (existing.status === "executed" || existing.status === "confirmed") {
+      return { paymentIntent: mapPaymentIntent(existing) }
+    }
     if (existing.status === "failed") {
       throw APIError.failedPrecondition(
         "payment intent execution previously failed; create a new intent before retrying",
@@ -883,7 +904,7 @@ export const executePaymentIntent = api(
       guardReceiptId,
     })
 
-    const claimed = await db.queryRow<PaymentIntentRow>`
+    let claimed = await db.queryRow<PaymentIntentRow>`
       UPDATE payment_intents
       SET
         status = 'executing',
@@ -910,29 +931,41 @@ export const executePaymentIntent = api(
         SELECT * FROM payment_intents
         WHERE organization_id = ${actor.organizationID} AND id = ${params.id}
       `
-      if (current?.status === "executing" && current.execution_idempotency_key === idempotencyKey) {
+      if (
+        current?.status === "executing" &&
+        current.execution_idempotency_key === idempotencyKey &&
+        current.execution_id
+      ) {
+        claimed = current
+      } else if (current?.status === "executing" && current.execution_idempotency_key === idempotencyKey) {
         return { paymentIntent: mapPaymentIntent(current) }
+      } else {
+        throw APIError.failedPrecondition(
+          "payment intent is already being executed or is not in a prepared state",
+        )
       }
-      throw APIError.failedPrecondition(
-        "payment intent is already being executed or is not in a prepared state",
-      )
+    }
+
+    if (!claimed.execution_id) {
+      throw APIError.failedPrecondition("payment intent missing execution_id")
     }
 
     let broadcastedTxHash: string | undefined
     try {
-      const execution = await executeCdpTransfer({
-        organizationID: actor.organizationID,
+      const { execution, attemptProviderKey } = await submitPersistedCdpTransfer({
+        organizationId: actor.organizationID,
+        paymentIntentId: params.id,
+        executionId: claimed.execution_id,
         recipientAddress: claimed.recipient_address,
         amountBaseUnits: claimed.amount_base_units,
         chain: claimed.chain,
-        paymentIntentId: params.id,
         idempotencyKey,
       })
       broadcastedTxHash = execution.txHash
       const demoSeed = buildDemoExecutionSeed({
         organizationID: actor.organizationID,
         paymentIntentId: params.id,
-        idempotencyKey,
+        providerIdempotencyKey: attemptProviderKey,
         recipientAddress: claimed.recipient_address,
         amountBaseUnits: claimed.amount_base_units,
         chain: claimed.chain,
@@ -1004,6 +1037,12 @@ export const executePaymentIntent = api(
       `
       await updateInvoiceStatus(actor.organizationID, invoice.id, "executed")
       const paymentIntent = mapPaymentIntent(must(row, "payment intent"))
+      await completePurchaseFulfilmentForPaymentIntent({
+        purchaseId: row.purchase_id,
+        paymentIntentId: paymentIntent.id,
+        paymentIdentifier: row.payment_identifier,
+        txHash: execution.txHash,
+      })
       await appendAudit(
         actor.organizationID,
         "payment_intent",
@@ -1051,6 +1090,20 @@ export const executePaymentIntent = api(
       return { paymentIntent }
     } catch (error) {
       const message = error instanceof Error ? error.message : "payment execution failed"
+      if (message === "CDP_RESPONSE_DROPPED") {
+        await db.exec`
+          UPDATE payment_intents
+          SET
+            guard_status = ${correlation.guardAuthorizationId ? frozenGuardStatus() : null},
+            settlement_status = 'pending'
+          WHERE organization_id = ${actor.organizationID}
+            AND id = ${params.id}
+            AND status = 'executing'
+        `
+        throw APIError.failedPrecondition(
+          "cdp accepted the request but the provider response was lost; retry with the same execution idempotency key",
+        )
+      }
       const failure = executionFailureTransition(broadcastedTxHash, guardAuthorizationId)
       if (broadcastedTxHash) {
         await db.exec`
@@ -2310,6 +2363,7 @@ interface ApprovalRow {
 interface PaymentIntentRow {
   id: string
   invoice_id: string
+  purchase_id: string | null
   chain: string
   token_address: string
   recipient_address: string

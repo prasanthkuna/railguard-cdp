@@ -13,12 +13,15 @@ import {
   recordPaymentSettlement,
   releasePaymentGuardAuthorization,
 } from "./x402Guard"
+import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 
 export interface PaymentIntentReconcileRow {
   id: string
   organization_id: string
   status: string
   tx_hash: string | null
+  purchase_id: string | null
+  payment_identifier: string | null
   chain: string
   token_address: string
   recipient_address: string
@@ -34,11 +37,20 @@ export interface PaymentIntentReconcileRow {
   expected_amount: string | null
 }
 
-function buildDemoSeed(row: PaymentIntentReconcileRow): string {
+async function buildDemoSeed(row: PaymentIntentReconcileRow): Promise<string> {
+  const attempt = await db.queryRow<{ provider_idempotency_key: string }>`
+    SELECT provider_idempotency_key
+    FROM execution_attempts
+    WHERE organization_id = ${row.organization_id}
+      AND payment_intent_id = ${row.id}
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+  const providerKey = attempt?.provider_idempotency_key ?? row.execution_idempotency_key ?? ""
   return [
     row.organization_id,
     row.id,
-    row.execution_idempotency_key ?? "",
+    providerKey,
     row.recipient_address,
     row.amount_base_units,
     row.chain,
@@ -71,7 +83,7 @@ export async function reconcilePaymentIntentRow(
   const verification = await verifySettlement({
     txHash: row.tx_hash,
     expected: row.chain === BASE_SEPOLIA_CHAIN ? buildExpectedFacts(row) : undefined,
-    demoSeed: buildDemoSeed(row),
+    demoSeed: await buildDemoSeed(row),
   })
 
   const alreadyCommitted = row.guard_status === "committed"
@@ -119,6 +131,15 @@ export async function reconcilePaymentIntentRow(
     `
   }
 
+  if (verification.status === "CONFIRMED" && row.tx_hash) {
+    await completePurchaseFulfilmentForPaymentIntent({
+      purchaseId: row.purchase_id,
+      paymentIntentId: row.id,
+      paymentIdentifier: row.payment_identifier,
+      txHash: row.tx_hash,
+    })
+  }
+
   switch (verification.status) {
     case "CONFIRMED":
       return "confirmed"
@@ -140,6 +161,8 @@ export const reconcileSubmittedPayments = api(
         organization_id,
         status,
         tx_hash,
+        purchase_id,
+        payment_identifier,
         chain,
         token_address,
         recipient_address,

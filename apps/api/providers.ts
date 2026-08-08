@@ -16,6 +16,8 @@ import {
   verifyTransferFacts,
 } from "../../packages/settlement/src"
 import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
+import { getCdpTransferHook } from "./cdpTransferHook"
+import { type CdpExecutionResult } from "./providers.types"
 import { resolveCdpConfirmationDepth } from "./runtimeConfig"
 
 const BASE_SEPOLIA_CHAIN_ID = 84532
@@ -178,12 +180,6 @@ export interface ExtractedInvoiceFields {
   extractionConfidence: number
   walletConfidence: number
   raw: JsonObject
-}
-
-export interface CdpExecutionResult {
-  txHash: string
-  mode: "live" | "demo"
-  accountAddress?: string
 }
 
 export interface NotificationDeliveryInput {
@@ -451,6 +447,9 @@ function heuristicExtraction(input: { bytes: Buffer; contentType: string; fileNa
   }
 }
 
+export type { CdpExecutionResult } from "./providers.types"
+export { setCdpTransferHookForTests } from "./cdpTransferHook"
+
 export async function executeCdpTransfer(input: {
   organizationID: string
   recipientAddress: string
@@ -458,12 +457,22 @@ export async function executeCdpTransfer(input: {
   chain: string
   paymentIntentId: string
   idempotencyKey: string
+  providerIdempotencyKey: string
 }): Promise<CdpExecutionResult> {
+  const hook = getCdpTransferHook()
+  if (hook) {
+    const hooked = await hook(input)
+    if (hooked === "DROP_RESPONSE") {
+      throw new Error("CDP_RESPONSE_DROPPED")
+    }
+    return hooked
+  }
+
   const mode = resolvePaymentMode()
   const demoSeed = [
     input.organizationID,
     input.paymentIntentId,
-    input.idempotencyKey,
+    input.providerIdempotencyKey,
     input.recipientAddress,
     input.amountBaseUnits,
     input.chain,
@@ -501,6 +510,7 @@ export async function executeCdpTransfer(input: {
       amount: BigInt(input.amountBaseUnits),
       token: "usdc",
       network: "base-sepolia",
+      idempotencyKey: input.providerIdempotencyKey,
     })
 
     return {
