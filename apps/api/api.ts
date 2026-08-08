@@ -1785,7 +1785,13 @@ async function ensureLocalIdentity(actor: {
       ${actor.role}
     )
     ON CONFLICT (id)
-    DO UPDATE SET email = EXCLUDED.email, role = EXCLUDED.role
+    DO UPDATE SET
+      email = EXCLUDED.email,
+      workos_user_id = COALESCE(EXCLUDED.workos_user_id, users.workos_user_id),
+      role = CASE
+        WHEN users.role IN ('owner', 'finance', 'approver') THEN users.role
+        ELSE EXCLUDED.role
+      END
   `
 }
 

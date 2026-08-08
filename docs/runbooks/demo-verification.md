@@ -29,21 +29,32 @@ RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
 
 Optional overrides:
 
-- `RAILGUARD_MODE` (`curated` or `stress`)
+- `RAILGUARD_MODE` (`curated`, `stress`, or `showcase`)
 - `RAILGUARD_ORG_ID`
 - `RAILGUARD_WORKSPACE_NAME`
 - `RAILGUARD_OWNER_EMAIL`
 - `RAILGUARD_RUN_ID`
+- `RAILGUARD_ACCESS_TOKEN` / `RAILGUARD_REFRESH_TOKEN` (required for `showcase` on WorkOS staging)
 
 Recommended usage:
 
 ```bash
-# Clean showcase dataset for videos and GTM proof
+# Clean curated dataset for videos (demo header auth / local)
 RAILGUARD_MODE=curated RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
 
 # Repeatable stress validation against the long-lived org
 RAILGUARD_MODE=stress RAILGUARD_ORG_ID=org_demo_rollout RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app bun run verify:demo
+
+# Seed PreBroadcast org with realistic ops data (WorkOS bearer)
+# Capture tokens from Chrome localStorage `railguard_auth_session` while logged in.
+RAILGUARD_MODE=showcase `
+  RAILGUARD_BASE_URL=https://staging-railguard-s4ii.encr.app `
+  RAILGUARD_ORG_ID=org_01KZG3PR1SQX5EPF94709V0GD2 `
+  RAILGUARD_REFRESH_TOKEN=<from localStorage> `
+  bun run verify:demo
 ```
+
+Showcase naming is production-like (e.g. Northline Logistics / `NL-4821`) — no `DEMO-*` labels. The script prints a terminal cheat sheet only.
 
 ## Expected Proof Points
 

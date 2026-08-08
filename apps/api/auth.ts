@@ -75,10 +75,22 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
         )
       }
 
+      // WorkOS JWTs often carry org role "member", which maps to viewer. Prefer the
+      // local app role (set to owner on first login) so operators keep write access.
+      const localUser = await db.queryRow<{ role: string }>`
+        SELECT role FROM users
+        WHERE organization_id = ${organizationID}
+          AND (id = ${verified.userID} OR workos_user_id = ${verified.userID})
+        ORDER BY created_at ASC
+        LIMIT 1
+      `
+      const role =
+        localUser?.role && isAppRole(localUser.role) ? localUser.role : verified.role
+
       return {
         userID: verified.userID,
         organizationID,
-        role: verified.role,
+        role,
         email: params.email?.trim(),
       }
     } catch (error) {

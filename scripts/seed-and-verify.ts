@@ -28,6 +28,7 @@ interface Vendor {
   id: string
   name: string
   status: VendorStatus
+  riskScore?: number
 }
 
 interface Invoice {
@@ -46,7 +47,7 @@ interface PolicyRun {
 
 interface PaymentIntent {
   id: string
-  status: "prepared" | "executed" | "failed"
+  status: "prepared" | "executed" | "confirmed" | "failed"
   txHash?: string
 }
 
@@ -66,7 +67,7 @@ interface ApiErrorBody {
   error?: string
 }
 
-type RunMode = "curated" | "stress"
+type RunMode = "curated" | "stress" | "showcase"
 
 function parseEnvFile(fileName: string): Record<string, string> {
   const fullPath = join(process.cwd(), fileName)
@@ -95,15 +96,20 @@ function stripTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "")
 }
 
+function parseMode(raw: string): RunMode {
+  const value = raw.toLowerCase()
+  if (value === "stress") return "stress"
+  if (value === "showcase") return "showcase"
+  return "curated"
+}
+
 const baseURL = stripTrailingSlash(
   env(
     "RAILGUARD_BASE_URL",
     env("NEXT_PUBLIC_API_URL", env("APP_BASE_URL", "http://localhost:4000")),
   ),
 )
-const mode = (
-  (env("RAILGUARD_MODE", "curated").toLowerCase() as RunMode) === "stress" ? "stress" : "curated"
-) as RunMode
+const mode = parseMode(env("RAILGUARD_MODE", "curated"))
 const runID = env(
   "RAILGUARD_RUN_ID",
   new Date()
@@ -113,7 +119,11 @@ const runID = env(
 )
 const requestedOrgID = env(
   "RAILGUARD_ORG_ID",
-  mode === "curated" ? `org_curated_${runID}` : "org_demo_rollout",
+  mode === "showcase"
+    ? "org_01KZG3PR1SQX5EPF94709V0GD2"
+    : mode === "curated"
+      ? `org_curated_${runID}`
+      : "org_demo_rollout",
 )
 const workspaceName = env(
   "RAILGUARD_WORKSPACE_NAME",
@@ -122,14 +132,33 @@ const workspaceName = env(
 const ownerEmail = env("RAILGUARD_OWNER_EMAIL", "ops@railguard.ai")
 
 let activeOrgID = requestedOrgID
+let accessToken = env("RAILGUARD_ACCESS_TOKEN")
+let refreshToken = env("RAILGUARD_REFRESH_TOKEN")
 
-const authHeaders = () => ({
-  Authorization: "Bearer demo-token",
-  "X-Organization-Id": activeOrgID,
-  "X-Role": "owner",
-  "X-User-Id": env("RAILGUARD_USER_ID", "usr_operator_primary"),
-  "X-User-Email": env("RAILGUARD_USER_EMAIL", "ops@railguard.ai"),
-})
+const authHeaders = (): Record<string, string> => {
+  if (mode === "showcase") {
+    if (!accessToken) throw new Error("RAILGUARD_ACCESS_TOKEN is required for showcase mode")
+    return { Authorization: `Bearer ${accessToken}` }
+  }
+  return {
+    Authorization: "Bearer demo-token",
+    "X-Organization-Id": activeOrgID,
+    "X-Role": "owner",
+    "X-User-Id": env("RAILGUARD_USER_ID", "usr_operator_primary"),
+    "X-User-Email": env("RAILGUARD_USER_EMAIL", "ops@railguard.ai"),
+  }
+}
+
+const executorAuthHeaders = (): Record<string, string> => {
+  if (mode === "showcase") return authHeaders()
+  return {
+    Authorization: "Bearer demo-token",
+    "X-Organization-Id": activeOrgID,
+    "X-Role": "finance",
+    "X-User-Id": env("RAILGUARD_EXECUTOR_USER_ID", "usr_executor_verify"),
+    "X-User-Email": env("RAILGUARD_EXECUTOR_USER_EMAIL", "finance@railguard.ai"),
+  }
+}
 
 async function api<T>(
   path: string,
@@ -137,12 +166,13 @@ async function api<T>(
     method?: string
     body?: unknown
     auth?: boolean
+    headers?: Record<string, string>
   } = {},
 ): Promise<T> {
   const res = await fetch(`${baseURL}${path}`, {
     method: options.method ?? (options.body ? "POST" : "GET"),
     headers: {
-      ...(options.auth === false ? {} : authHeaders()),
+      ...(options.auth === false ? {} : options.headers ?? authHeaders()),
       ...(options.body ? { "Content-Type": "application/json" } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -171,7 +201,7 @@ function logStep(step: string, detail?: string) {
 }
 
 function makeInvoiceNumber(label: string): string {
-  return `RG-${label}-${runID}`
+  return mode === "showcase" ? label : `RG-${label}-${runID}`
 }
 
 function buildSyntheticPdf(lines: string[]): string {
@@ -198,7 +228,38 @@ async function poll<T>(
   throw new Error(`Timed out while waiting for ${label}`)
 }
 
+async function refreshAccessTokenIfNeeded(): Promise<void> {
+  if (mode !== "showcase") return
+  if (!refreshToken && !accessToken) {
+    throw new Error("Provide RAILGUARD_ACCESS_TOKEN or RAILGUARD_REFRESH_TOKEN for showcase mode")
+  }
+  if (!refreshToken) return
+
+  logStep("auth", "refreshing WorkOS session")
+  const refreshed = await api<{
+    accessToken: string
+    refreshToken: string
+    organizationID?: string
+    email: string
+  }>("/auth/workos/refresh", {
+    auth: false,
+    body: {
+      refreshToken,
+      organizationID: requestedOrgID,
+    },
+  })
+  accessToken = refreshed.accessToken
+  refreshToken = refreshed.refreshToken
+  if (refreshed.organizationID) activeOrgID = refreshed.organizationID
+  logStep("auth", `session ready for ${refreshed.email}`)
+}
+
 async function ensureWorkspace(): Promise<Workspace> {
+  if (mode === "showcase") {
+    const existing = await api<{ workspace: Workspace }>("/workspace")
+    return existing.workspace
+  }
+
   try {
     const existing = await api<{ workspace: Workspace }>("/workspace")
     return existing.workspace
@@ -229,9 +290,17 @@ async function upsertWorkspaceSettings(): Promise<Workspace> {
   return response.workspace
 }
 
-async function createVendor(name: string, status: VendorStatus): Promise<Vendor> {
+async function createVendor(
+  name: string,
+  status: VendorStatus,
+  riskScore?: number,
+): Promise<Vendor> {
   const response = await api<{ vendor: Vendor }>("/vendors", {
-    body: { name, status, riskScore: status === "blocked" ? 95 : 10 },
+    body: {
+      name,
+      status,
+      riskScore: riskScore ?? (status === "blocked" ? 95 : status === "approved" ? 10 : 25),
+    },
   })
   return response.vendor
 }
@@ -242,8 +311,38 @@ async function addWallet(vendorID: string, address: string, status: VendorStatus
   })
 }
 
+async function listVendors() {
+  return api<{ vendors: Vendor[] }>("/vendors")
+}
+
+async function findVendorByName(name: string): Promise<Vendor | null> {
+  const response = await listVendors()
+  return response.vendors.find((vendor) => vendor.name === name) ?? null
+}
+
+async function ensureVendor(
+  name: string,
+  status: VendorStatus,
+  wallet: string,
+  riskScore?: number,
+): Promise<Vendor> {
+  const existing = await findVendorByName(name)
+  const vendor = existing ?? (await createVendor(name, status, riskScore))
+  if (!existing || existing.status !== status || (riskScore != null && existing.riskScore !== riskScore)) {
+    if (existing) {
+      await createVendor(name, status, riskScore)
+    }
+  }
+  await addWallet(vendor.id, wallet, status === "blocked" ? "blocked" : "approved")
+  return (await findVendorByName(name)) ?? vendor
+}
+
 async function uploadInvoice(body: Record<string, unknown>) {
   return api<{ upload: { id: string } }>("/invoices/upload", { body })
+}
+
+async function createInvoice(body: Record<string, unknown>) {
+  return api<{ invoice: Invoice; policyRun: PolicyRun }>("/invoices", { body })
 }
 
 async function getInvoice(id: string) {
@@ -270,6 +369,11 @@ async function listInvoices() {
   return api<{ invoices: Invoice[] }>("/invoices")
 }
 
+async function findInvoiceByNumber(invoiceNumber: string): Promise<Invoice | null> {
+  const response = await listInvoices()
+  return response.invoices.find((invoice) => invoice.invoiceNumber === invoiceNumber) ?? null
+}
+
 async function evaluateInvoice(invoiceID: string) {
   return api<{ policyRun: PolicyRun }>("/policy/evaluate", {
     body: { invoiceID },
@@ -279,11 +383,8 @@ async function evaluateInvoice(invoiceID: string) {
 async function waitForInvoiceByNumber(invoiceNumber: string, expectedStatus?: InvoiceStatus) {
   return poll(
     `invoice ${invoiceNumber}`,
-    async () => {
-      const response = await listInvoices()
-      return response.invoices.find((invoice) => invoice.invoiceNumber === invoiceNumber) ?? null
-    },
-    (value) => Boolean(value) && (!expectedStatus || value.status === expectedStatus),
+    async () => findInvoiceByNumber(invoiceNumber),
+    (value) => Boolean(value) && (!expectedStatus || value!.status === expectedStatus),
     45000,
   )
 }
@@ -303,20 +404,42 @@ async function verifyDownload(url: string, format: "csv" | "pdf") {
   assert(bytes.byteLength > 0, `Expected ${format} audit export to contain data`)
 }
 
-async function main() {
-  console.log(
-    JSON.stringify(
-      {
-        baseURL,
-        mode,
-        requestedOrgID,
-        runID,
-      },
-      null,
-      2,
-    ),
-  )
+async function ensureManualInvoice(input: {
+  invoiceNumber: string
+  vendor: Vendor
+  amountBaseUnits: string
+  walletAddress: string
+  paymentMemo: string
+  documentHash: string
+}): Promise<{ invoice: Invoice; policyRun: PolicyRun; created: boolean }> {
+  const existing = await findInvoiceByNumber(input.invoiceNumber)
+  if (existing) {
+    const detail = await getInvoice(existing.id)
+    return {
+      invoice: detail.invoice,
+      policyRun: detail.policyRun ?? { result: "allow", triggeredRules: [] },
+      created: false,
+    }
+  }
 
+  const created = await createInvoice({
+    vendorID: input.vendor.id,
+    invoiceNumber: input.invoiceNumber,
+    documentHash: input.documentHash,
+    amountBaseUnits: input.amountBaseUnits,
+    token: "usdc",
+    chain: "base-sepolia",
+    walletAddress: input.walletAddress,
+    extractionConfidence: 0.98,
+    walletConfidence: 0.99,
+    vendorNameRaw: input.vendor.name,
+    paymentMemo: input.paymentMemo,
+    lineItemSummary: input.paymentMemo,
+  })
+  return { invoice: created.invoice, policyRun: created.policyRun, created: true }
+}
+
+async function runCuratedOrStress(): Promise<void> {
   const workspace = await ensureWorkspace()
   activeOrgID = workspace.id
   logStep("workspace", `${workspace.name} (${workspace.id})`)
@@ -357,8 +480,8 @@ async function main() {
     paymentMemoHint: `Allow verification ${runID}`,
   })
   const allowInvoice = await waitForInvoiceByNumber(allowInvoiceNumber)
-  const allowPolicyRun = await evaluateInvoice(allowInvoice.id)
-  const allowInvoiceDetail = await getInvoice(allowInvoice.id)
+  const allowPolicyRun = await evaluateInvoice(allowInvoice!.id)
+  const allowInvoiceDetail = await getInvoice(allowInvoice!.id)
   assert(
     allowPolicyRun.policyRun.result === "allow",
     "Expected allow invoice policy result to be allow",
@@ -368,7 +491,7 @@ async function main() {
   logStep("simulation-flow", "forcing an approval threshold change")
   const simulated = await api<{ policyRun: PolicyRun }>("/policy/simulate", {
     body: {
-      invoiceID: allowInvoice.id,
+      invoiceID: allowInvoice!.id,
       approvalThresholdBaseUnits: "1000000000",
       hardCapBaseUnits: "100000000000",
       allowedToken: "usdc",
@@ -410,8 +533,8 @@ async function main() {
     paymentMemoHint: `Escalate verification ${runID}`,
   })
   const escalateInvoice = await waitForInvoiceByNumber(escalateInvoiceNumber)
-  const escalatedPolicyRun = await evaluateInvoice(escalateInvoice.id)
-  const escalateInvoiceDetail = await getInvoice(escalateInvoice.id)
+  const escalatedPolicyRun = await evaluateInvoice(escalateInvoice!.id)
+  const escalateInvoiceDetail = await getInvoice(escalateInvoice!.id)
   assert(
     escalatedPolicyRun.policyRun.result === "escalate",
     "Expected pending vendor invoice policy result to be escalate",
@@ -454,15 +577,14 @@ async function main() {
       return (
         response.invoices.find(
           (invoice) =>
-            invoice.invoiceNumber === allowInvoiceNumber && invoice.id !== allowInvoice.id,
+            invoice.invoiceNumber === allowInvoiceNumber && invoice.id !== allowInvoice!.id,
         ) ?? null
       )
     },
     (value) => Boolean(value),
     45000,
   )
-  const blockedPolicyRun = await evaluateInvoice(blockedInvoice.id)
-  const blockedInvoiceDetail = await getInvoice(blockedInvoice.id)
+  const blockedPolicyRun = await evaluateInvoice(blockedInvoice!.id)
   assert(blockedPolicyRun.policyRun.result === "block", "Expected duplicate invoice to be blocked")
   assert(
     blockedPolicyRun.policyRun.triggeredRules.includes("invoice.duplicate"),
@@ -474,9 +596,9 @@ async function main() {
   )
 
   logStep("approval-flow", "approving the escalated invoice")
-  const approvalResponse = await api<{ invoice: Invoice }>(`/approvals/${escalateInvoice.id}`, {
+  const approvalResponse = await api<{ invoice: Invoice }>(`/approvals/${escalateInvoice!.id}`, {
     body: {
-      invoiceID: escalateInvoice.id,
+      invoiceID: escalateInvoice!.id,
       decision: "approved",
       reason: "Verification script approval",
     },
@@ -489,7 +611,7 @@ async function main() {
   logStep("payment-flow", "creating and executing a payment intent")
   const paymentIntent = await api<{ paymentIntent: PaymentIntent }>("/payment-intents", {
     body: {
-      invoiceID: escalateInvoice.id,
+      invoiceID: escalateInvoice!.id,
       idempotencyKey: `intent-${runID}`,
     },
   })
@@ -505,11 +627,13 @@ async function main() {
         id: paymentIntent.paymentIntent.id,
         idempotencyKey: `execute-${runID}`,
       },
+      headers: executorAuthHeaders(),
     },
   )
   assert(
-    executedIntent.paymentIntent.status === "executed",
-    "Expected payment intent status to be executed",
+    executedIntent.paymentIntent.status === "executed" ||
+      executedIntent.paymentIntent.status === "confirmed",
+    "Expected payment intent status to be executed or confirmed",
   )
   assert(
     executedIntent.paymentIntent.txHash,
@@ -541,8 +665,8 @@ async function main() {
   })
 
   const extractedInvoice = await waitForInvoiceByNumber(uploadInvoiceNumber)
-  const extractedPolicyRun = await evaluateInvoice(extractedInvoice.id)
-  const extractedInvoiceDetail = await getInvoice(extractedInvoice.id)
+  const extractedPolicyRun = await evaluateInvoice(extractedInvoice!.id)
+  const extractedInvoiceDetail = await getInvoice(extractedInvoice!.id)
   assert(extractedInvoice, "Expected uploaded invoice to be extracted into an invoice record")
   assert(
     extractedPolicyRun.policyRun.result === "allow",
@@ -557,14 +681,14 @@ async function main() {
   const csvExport = await api<{ auditExport: AuditExportRecord }>("/audit/exports", {
     body: {
       entityType: "invoice",
-      entityID: escalateInvoice.id,
+      entityID: escalateInvoice!.id,
       format: "csv",
     },
   })
   const pdfExport = await api<{ auditExport: AuditExportRecord }>("/audit/exports", {
     body: {
       entityType: "invoice",
-      entityID: escalateInvoice.id,
+      entityID: escalateInvoice!.id,
       format: "pdf",
     },
   })
@@ -585,7 +709,7 @@ async function main() {
     "Expected dashboard.totalProtectedBaseUnits to include the approved payment amount",
   )
 
-  const invoiceDetail = await getInvoice(escalateInvoice.id)
+  const invoiceDetail = await getInvoice(escalateInvoice!.id)
   assert(
     invoiceDetail.invoice.status === "executed",
     "Expected approved invoice detail to be executed",
@@ -603,10 +727,10 @@ async function main() {
         activeOrgID,
         workspace: updatedWorkspace.name,
         created: {
-          allowInvoice: allowInvoice.id,
-          escalatedInvoice: escalateInvoice.id,
-          blockedInvoice: blockedInvoice.id,
-          uploadedInvoice: extractedInvoice.id,
+          allowInvoice: allowInvoice!.id,
+          escalatedInvoice: escalateInvoice!.id,
+          blockedInvoice: blockedInvoice!.id,
+          uploadedInvoice: extractedInvoice!.id,
           paymentIntent: executedIntent.paymentIntent.id,
           csvExport: csvExport.auditExport.id,
           pdfExport: pdfExport.auditExport.id,
@@ -618,12 +742,429 @@ async function main() {
   )
 }
 
+async function runShowcase(): Promise<void> {
+  await refreshAccessTokenIfNeeded()
+
+  const workspace = await ensureWorkspace()
+  activeOrgID = workspace.id
+  logStep("workspace", `${workspace.name} (${workspace.id})`)
+
+  const updatedWorkspace = await upsertWorkspaceSettings()
+  logStep(
+    "workspace-settings",
+    `${updatedWorkspace.allowedChain} / threshold ${updatedWorkspace.approvalThresholdBaseUnits}`,
+  )
+
+  const northline = await ensureVendor(
+    "Northline Logistics",
+    "approved",
+    "0x1111111111111111111111111111111111111111",
+    12,
+  )
+  const helix = await ensureVendor(
+    "Helix Components",
+    "pending",
+    "0x3333333333333333333333333333333333333333",
+    28,
+  )
+  const cascade = await ensureVendor(
+    "Cascade Media",
+    "pending",
+    "0x4444444444444444444444444444444444444444",
+    22,
+  )
+  const atlas = await ensureVendor(
+    "Atlas Fabrication",
+    "approved",
+    "0x5555555555555555555555555555555555555555",
+    15,
+  )
+  const meridian = await ensureVendor(
+    "Meridian Supplies",
+    "pending",
+    "0x6666666666666666666666666666666666666666",
+    30,
+  )
+  await ensureVendor(
+    "Redwood Offshore",
+    "blocked",
+    "0x7777777777777777777777777777777777777777",
+    95,
+  )
+  await ensureVendor(
+    "Quanta Field Services",
+    "approved",
+    "0x8888888888888888888888888888888888888888",
+    88,
+  )
+
+  const cheatSheet: Record<string, { invoiceNumber: string; invoiceID: string; status: string; story: string }> =
+    {}
+
+  // Ready / allow (also used for executed payment — SoD-safe, no prior approval)
+  logStep("allow", "Northline NL-4821")
+  const allow = await ensureManualInvoice({
+    invoiceNumber: "NL-4821",
+    vendor: northline,
+    amountBaseUnits: "2500000000",
+    walletAddress: "0x1111111111111111111111111111111111111111",
+    paymentMemo: "Q3 freight settlement",
+    documentHash: "sha256:showcase-nl-4821",
+  })
+  assert(allow.policyRun.result === "allow" || allow.invoice.status === "ready" || allow.invoice.status === "executed" || allow.invoice.status === "payment_intent_created", "NL-4821 should allow")
+  cheatSheet.allowReady = {
+    invoiceNumber: "NL-4821",
+    invoiceID: allow.invoice.id,
+    status: allow.invoice.status,
+    story: "Clean auto-pass / Policy Simulator",
+  }
+
+  logStep("simulate", "threshold flip on NL-4821")
+  const simulated = await api<{ policyRun: PolicyRun }>("/policy/simulate", {
+    body: {
+      invoiceID: allow.invoice.id,
+      approvalThresholdBaseUnits: "1000000000",
+      hardCapBaseUnits: "100000000000",
+      allowedToken: "usdc",
+      allowedChain: "base-sepolia",
+      amountReviewMultiplier: 3,
+      walletRiskThreshold: 80,
+    },
+  })
+  assert(simulated.policyRun.result === "escalate", "Simulation should escalate NL-4821")
+
+  // Needs approval (leave open)
+  logStep("escalate", "Helix HX-1904 needs approval")
+  const escalate = await ensureManualInvoice({
+    invoiceNumber: "HX-1904",
+    vendor: helix,
+    amountBaseUnits: "6000000000",
+    walletAddress: "0x3333333333333333333333333333333333333333",
+    paymentMemo: "PO-88412 component kit",
+    documentHash: "sha256:showcase-hx-1904",
+  })
+  if (escalate.invoice.status === "needs_approval") {
+    cheatSheet.needsApproval = {
+      invoiceNumber: "HX-1904",
+      invoiceID: escalate.invoice.id,
+      status: escalate.invoice.status,
+      story: "Dashboard Needs approval",
+    }
+  } else if (escalate.created || escalate.invoice.status === "received") {
+    const evaluated = await evaluateInvoice(escalate.invoice.id)
+    assert(evaluated.policyRun.result === "escalate", "HX-1904 should escalate")
+    const detail = await getInvoice(escalate.invoice.id)
+    cheatSheet.needsApproval = {
+      invoiceNumber: "HX-1904",
+      invoiceID: detail.invoice.id,
+      status: detail.invoice.status,
+      story: "Dashboard Needs approval",
+    }
+  } else {
+    cheatSheet.needsApproval = {
+      invoiceNumber: "HX-1904",
+      invoiceID: escalate.invoice.id,
+      status: escalate.invoice.status,
+      story: "Dashboard Needs approval (existing)",
+    }
+  }
+
+  // Duplicate + wallet change → block
+  logStep("block", "duplicate NL-4821 with wallet change")
+  let blocked = (await listInvoices()).invoices.find(
+    (invoice) =>
+      invoice.invoiceNumber === "NL-4821" &&
+      invoice.id !== allow.invoice.id &&
+      invoice.status === "blocked",
+  )
+  if (!blocked) {
+    const blockedCreate = await createInvoice({
+      vendorID: northline.id,
+      invoiceNumber: "NL-4821",
+      documentHash: "sha256:showcase-nl-4821-dup-wallet",
+      amountBaseUnits: "2500000000",
+      token: "usdc",
+      chain: "base-sepolia",
+      walletAddress: "0x2222222222222222222222222222222222222222",
+      extractionConfidence: 0.97,
+      paymentMemo: "Corrected remittance wallet",
+    })
+    assert(blockedCreate.policyRun.result === "block", "Duplicate wallet-change should block")
+    blocked = blockedCreate.invoice
+  }
+  cheatSheet.blocked = {
+    invoiceNumber: "NL-4821",
+    invoiceID: blocked!.id,
+    status: blocked!.status,
+    story: "Dashboard Blocked (duplicate + wallet change)",
+  }
+
+  // Reject path
+  logStep("reject", "Cascade CM-7730")
+  const rejectSeed = await ensureManualInvoice({
+    invoiceNumber: "CM-7730",
+    vendor: cascade,
+    amountBaseUnits: "7200000000",
+    walletAddress: "0x4444444444444444444444444444444444444444",
+    paymentMemo: "Campaign production invoice",
+    documentHash: "sha256:showcase-cm-7730",
+  })
+  let rejectInvoice = rejectSeed.invoice
+  if (rejectInvoice.status === "needs_approval") {
+    const rejected = await api<{ invoice: Invoice }>(`/approvals/${rejectInvoice.id}`, {
+      body: {
+        invoiceID: rejectInvoice.id,
+        decision: "rejected",
+        reason: "Scope mismatch vs PO-2190",
+      },
+    })
+    rejectInvoice = rejected.invoice
+  }
+  cheatSheet.rejected = {
+    invoiceNumber: "CM-7730",
+    invoiceID: rejectInvoice.id,
+    status: rejectInvoice.status,
+    story: "Rejected approval",
+  }
+
+  // Approved + prepared intent only (SoD: same user cannot execute after approving)
+  logStep("approve-prepare", "Meridian MS-5512 approve + prepared intent")
+  const approveSeed = await ensureManualInvoice({
+    invoiceNumber: "MS-5512",
+    vendor: meridian,
+    amountBaseUnits: "8100000000",
+    walletAddress: "0x6666666666666666666666666666666666666666",
+    paymentMemo: "Warehouse restock — March",
+    documentHash: "sha256:showcase-ms-5512",
+  })
+  let approveInvoice = approveSeed.invoice
+  if (approveInvoice.status === "needs_approval") {
+    const approved = await api<{ invoice: Invoice }>(`/approvals/${approveInvoice.id}`, {
+      body: {
+        invoiceID: approveInvoice.id,
+        decision: "approved",
+        reason: "Matched receiving report RR-441",
+      },
+    })
+    approveInvoice = approved.invoice
+  }
+  if (
+    approveInvoice.status === "approved" ||
+    approveInvoice.status === "payment_intent_created"
+  ) {
+    const existingIntents = (await getInvoice(approveInvoice.id)).paymentIntents
+    if (existingIntents.length === 0) {
+      await api<{ paymentIntent: PaymentIntent }>("/payment-intents", {
+        body: {
+          invoiceID: approveInvoice.id,
+          idempotencyKey: "intent-ms-5512",
+        },
+      })
+    }
+    approveInvoice = (await getInvoice(approveInvoice.id)).invoice
+  }
+  cheatSheet.approvedPrepared = {
+    invoiceNumber: "MS-5512",
+    invoiceID: approveInvoice.id,
+    status: approveInvoice.status,
+    story: "Approved with prepared intent (Execute needs second operator / SoD)",
+  }
+
+  // Prepared-only on allow path (Atlas) — no approval, intent only
+  logStep("prepared", "Atlas AF-2208 prepared intent")
+  const preparedSeed = await ensureManualInvoice({
+    invoiceNumber: "AF-2208",
+    vendor: atlas,
+    amountBaseUnits: "1800000000",
+    walletAddress: "0x5555555555555555555555555555555555555555",
+    paymentMemo: "CNC fixture lot B",
+    documentHash: "sha256:showcase-af-2208",
+  })
+  let preparedInvoice = preparedSeed.invoice
+  if (preparedInvoice.status === "ready") {
+    await api<{ paymentIntent: PaymentIntent }>("/payment-intents", {
+      body: {
+        invoiceID: preparedInvoice.id,
+        idempotencyKey: "intent-af-2208",
+      },
+    })
+    preparedInvoice = (await getInvoice(preparedInvoice.id)).invoice
+  }
+  cheatSheet.preparedOnly = {
+    invoiceNumber: "AF-2208",
+    invoiceID: preparedInvoice.id,
+    status: preparedInvoice.status,
+    story: "Ready to Execute CTA",
+  }
+
+  // Execute payment on allow invoice (NL-4821) — no SoD conflict
+  logStep("execute", "Northline NL-4821 payment")
+  let paidInvoice = (await getInvoice(allow.invoice.id)).invoice
+  if (paidInvoice.status === "ready") {
+    const intent = await api<{ paymentIntent: PaymentIntent }>("/payment-intents", {
+      body: {
+        invoiceID: paidInvoice.id,
+        idempotencyKey: "intent-nl-4821",
+      },
+    })
+    const executed = await api<{ paymentIntent: PaymentIntent }>(
+      `/payment-intents/${intent.paymentIntent.id}/execute`,
+      {
+        body: {
+          id: intent.paymentIntent.id,
+          idempotencyKey: "execute-nl-4821",
+        },
+      },
+    )
+    assert(
+      executed.paymentIntent.status === "executed" ||
+        executed.paymentIntent.status === "confirmed",
+      "NL-4821 execution should succeed",
+    )
+    assert(executed.paymentIntent.txHash, "Expected tx hash on NL-4821")
+    paidInvoice = (await getInvoice(paidInvoice.id)).invoice
+  } else if (paidInvoice.status === "payment_intent_created") {
+    const detail = await getInvoice(paidInvoice.id)
+    const intent = detail.paymentIntents.find((item) => item.status === "prepared")
+    if (intent) {
+      await api<{ paymentIntent: PaymentIntent }>(`/payment-intents/${intent.id}/execute`, {
+        body: { id: intent.id, idempotencyKey: "execute-nl-4821" },
+      })
+      paidInvoice = (await getInvoice(paidInvoice.id)).invoice
+    }
+  }
+  cheatSheet.executed = {
+    invoiceNumber: "NL-4821",
+    invoiceID: paidInvoice.id,
+    status: paidInvoice.status,
+    story: "Executed payment + audit trail",
+  }
+
+  // Upload extraction story
+  logStep("upload", "Northline NL-1509 upload extraction")
+  let uploaded = await findInvoiceByNumber("NL-1509")
+  if (!uploaded) {
+    await uploadInvoice({
+      fileName: "NL-1509.pdf",
+      contentType: "application/pdf",
+      contentBase64: Buffer.from(
+        buildSyntheticPdf([
+          "Invoice # NL-1509",
+          `Vendor: ${northline.name}`,
+          "Amount: 1500.00 USDC",
+          "Wallet: 0x1111111111111111111111111111111111111111",
+        ]),
+        "latin1",
+      ).toString("base64"),
+      vendorID: northline.id,
+      vendorNameHint: northline.name,
+      invoiceNumberHint: "NL-1509",
+      amountBaseUnitsHint: "1500000000",
+      tokenHint: "usdc",
+      chainHint: "base-sepolia",
+      walletAddressHint: "0x1111111111111111111111111111111111111111",
+      paymentMemoHint: "Express lane surcharge",
+    })
+    uploaded = await waitForInvoiceByNumber("NL-1509")
+  }
+  cheatSheet.uploaded = {
+    invoiceNumber: "NL-1509",
+    invoiceID: uploaded!.id,
+    status: uploaded!.status,
+    story: "Upload / extraction",
+  }
+
+  // High-risk vendor block invoice
+  logStep("high-risk", "Quanta QF-8801 risk block")
+  const quanta = (await findVendorByName("Quanta Field Services"))!
+  const riskSeed = await ensureManualInvoice({
+    invoiceNumber: "QF-8801",
+    vendor: quanta,
+    amountBaseUnits: "3200000000",
+    walletAddress: "0x8888888888888888888888888888888888888888",
+    paymentMemo: "Field survey retainer",
+    documentHash: "sha256:showcase-qf-8801",
+  })
+  assert(
+    riskSeed.policyRun.result === "block" || riskSeed.invoice.status === "blocked",
+    "High-risk vendor invoice should block",
+  )
+  cheatSheet.highRiskBlocked = {
+    invoiceNumber: "QF-8801",
+    invoiceID: riskSeed.invoice.id,
+    status: riskSeed.invoice.status,
+    story: "High-risk vendor block",
+  }
+
+  logStep("audit-export", "CSV + PDF for executed invoice")
+  const csvExport = await api<{ auditExport: AuditExportRecord }>("/audit/exports", {
+    body: { entityType: "invoice", entityID: paidInvoice.id, format: "csv" },
+  })
+  const pdfExport = await api<{ auditExport: AuditExportRecord }>("/audit/exports", {
+    body: { entityType: "invoice", entityID: paidInvoice.id, format: "pdf" },
+  })
+  const completedCsv = await waitForAuditExport(csvExport.auditExport.id)
+  const completedPdf = await waitForAuditExport(pdfExport.auditExport.id)
+  await verifyDownload(completedCsv.downloadURL!, "csv")
+  await verifyDownload(completedPdf.downloadURL!, "pdf")
+
+  const dashboard = await getDashboard()
+  logStep(
+    "dashboard",
+    `blocked=${dashboard.blocked} needsApproval=${dashboard.needsApproval} ready=${dashboard.readyToPay}`,
+  )
+
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        mode: "showcase",
+        baseURL,
+        activeOrgID,
+        workspace: updatedWorkspace.name,
+        cheatSheet,
+        dashboard,
+        exports: {
+          csv: csvExport.auditExport.id,
+          pdf: pdfExport.auditExport.id,
+        },
+      },
+      null,
+      2,
+    ),
+  )
+}
+
+async function main() {
+  console.log(
+    JSON.stringify(
+      {
+        baseURL,
+        mode,
+        requestedOrgID,
+        runID,
+        hasAccessToken: Boolean(accessToken),
+        hasRefreshToken: Boolean(refreshToken),
+      },
+      null,
+      2,
+    ),
+  )
+
+  if (mode === "showcase") {
+    await runShowcase()
+  } else {
+    await runCuratedOrStress()
+  }
+}
+
 main().catch((error) => {
   console.error(
     JSON.stringify(
       {
         ok: false,
         baseURL,
+        mode,
         activeOrgID,
         error: error instanceof Error ? error.message : String(error),
       },
