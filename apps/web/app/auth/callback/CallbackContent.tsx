@@ -14,9 +14,13 @@ export function CallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = React.useState("")
+  const startedRef = React.useRef(false)
 
   React.useEffect(() => {
-    let cancelled = false
+    // OAuth codes are single-use. Guard against React Strict Mode / remounts
+    // that would cancel or double-exchange the same code.
+    if (startedRef.current) return
+    startedRef.current = true
 
     async function finishSignIn() {
       const oauthError = searchParams.get("error")
@@ -24,7 +28,7 @@ export function CallbackContent() {
       if (oauthError) {
         const message = (oauthDescription || oauthError).replace(/\+/g, " ")
         clearWorkOSAuthFlow()
-        if (!cancelled) setError(message)
+        setError(message)
         return
       }
 
@@ -35,27 +39,23 @@ export function CallbackContent() {
         process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI || `${window.location.origin}/auth/callback`
 
       if (!code || !state) {
-        if (!cancelled) setError("Missing authorization code. Restart sign-in and try again.")
+        setError("Missing authorization code. Restart sign-in and try again.")
         return
       }
 
       if (!flow) {
-        if (!cancelled) {
-          setError("Sign-in session expired in this browser tab. Restart sign-in and try again.")
-        }
+        setError("Sign-in session expired in this browser tab. Restart sign-in and try again.")
         return
       }
 
       if (flow.state !== state) {
         clearWorkOSAuthFlow()
-        if (!cancelled) setError("WorkOS state verification failed. Restart sign-in and try again.")
+        setError("WorkOS state verification failed. Restart sign-in and try again.")
         return
       }
 
       try {
         const session = await api.workosExchange(code, redirectURI, flow.codeVerifier)
-        if (cancelled) return
-
         setAuthSession({
           accessToken: session.accessToken,
           userID: session.userID,
@@ -71,14 +71,11 @@ export function CallbackContent() {
         router.replace("/")
       } catch (error) {
         clearWorkOSAuthFlow()
-        if (!cancelled) setError(getErrorMessage(error, "Failed to finish Google sign-in"))
+        setError(getErrorMessage(error, "Failed to finish Google sign-in"))
       }
     }
 
     void finishSignIn()
-    return () => {
-      cancelled = true
-    }
   }, [router, searchParams])
 
   return (
