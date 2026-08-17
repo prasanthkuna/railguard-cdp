@@ -1,4 +1,4 @@
-# Dependency audit (railguard-cdp)
+# Dependency audit (Railguard monorepo)
 
 ## Status
 

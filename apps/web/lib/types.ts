@@ -118,6 +118,32 @@ export interface PaymentIntent {
   createdAt: string
 }
 
+export interface V5EvidenceExplain {
+  agent: string
+  task?: string
+  requested: string
+  budget?: string
+  merchant?: string
+  policyVersion: string
+  decision: string
+  rail?: string
+  settlement: string
+  evidenceValid: boolean
+}
+
+export interface V5EvidenceResponse {
+  executionId: string
+  evidence: Record<string, unknown>
+  explain: V5EvidenceExplain
+}
+
+export interface V5ExecutionResponse {
+  executionId: string
+  intentId: string
+  status: string
+  paymentIntentId?: string
+}
+
 export interface AuditEvent {
   id: string
   entityType: string

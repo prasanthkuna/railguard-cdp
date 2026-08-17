@@ -1,0 +1,29 @@
+{
+  "name": "Railguard Certified Executor",
+  "version": "v5.0.0",
+  "updated": "2026-08-17",
+  "badge": {
+    "replaySafe": true,
+    "idempotent": true,
+    "timeoutSafe": true,
+    "settlementAware": true,
+    "budgetAtomic": true,
+    "evidenceComplete": true
+  },
+  "rails": {
+    "x402": { "enabled": true, "conformance": "pass" },
+    "cdp": { "enabled": true, "conformance": "pass" },
+    "base": { "enabled": true, "conformance": "pass" },
+    "arc": { "enabled": false, "conformance": "deferred" },
+    "solana": { "enabled": false, "conformance": "deferred" },
+    "stellar": { "enabled": false, "conformance": "deferred" },
+    "stripe": { "enabled": false, "conformance": "deferred" }
+  },
+  "scenarios": [
+    { "id": "cdp-section22", "name": "CDP response drop → UNKNOWN", "status": "pass" },
+    { "id": "idempotent-replay", "name": "Same idempotency key", "status": "pass" },
+    { "id": "policy-deny", "name": "Policy block", "status": "pass" },
+    { "id": "budget-exceed", "name": "Budget reservation deny", "status": "pass" }
+  ],
+  "lab": "agent-payment-failure-lab"
+}

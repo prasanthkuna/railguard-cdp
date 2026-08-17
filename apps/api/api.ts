@@ -814,6 +814,14 @@ export const createPaymentIntent = api(
       },
       userActor(actor),
     )
+    const { ensureFinancialIntentForPayment } = await import("./v5Bridge")
+    await ensureFinancialIntentForPayment({
+      organizationId: actor.organizationID,
+      invoice,
+      paymentIntentId: paymentIntent.id,
+      idempotencyKey: params.idempotencyKey,
+      actorId: actor.userID,
+    }).catch(() => undefined)
     return { paymentIntent }
   },
 )
@@ -1115,6 +1123,13 @@ export const executePaymentIntent = api(
         },
         userActor(actor),
       )
+      const { syncFinancialIntentFromPaymentStatus } = await import("./v5Bridge")
+      await syncFinancialIntentFromPaymentStatus({
+        organizationId: actor.organizationID,
+        paymentIntentId: paymentIntent.id,
+        paymentStatus: "confirmed",
+        txHash: execution.txHash,
+      }).catch(() => undefined)
       return { paymentIntent }
     } catch (error) {
       const message = error instanceof Error ? error.message : "payment execution failed"

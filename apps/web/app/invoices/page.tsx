@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import * as React from "react"
+import { FilterTabs, PageHeader } from "../../components/design-system"
 import { Badge } from "../../components/ui/Badge"
 import { Button } from "../../components/ui/Button"
 import { Card } from "../../components/ui/Card"
@@ -37,40 +38,27 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
-            Invoice Inbox
-          </h1>
-          <p className="text-[var(--rg-text-muted)]">
-            Triage incoming payables, verify risk signals, and clear approvals.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => router.push("/vendors")}>
-            Vendor Registry
-          </Button>
-          <Button onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Payables"
+        title="Invoice Inbox"
+        description="Triage incoming payables, verify risk signals, and clear approvals."
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => router.push("/vendors")}>
+              Vendor Registry
+            </Button>
+            <Button variant="accent" onClick={() => router.push("/invoices/upload")}>
+              Import Invoice
+            </Button>
+          </>
+        }
+      />
 
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => (
-          <Button
-            key={tab.value}
-            variant={status === tab.value ? "primary" : "secondary"}
-            size="sm"
-            onClick={() => setStatus(tab.value)}
-            className="rounded-full px-4 h-10"
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+      <FilterTabs tabs={TABS} value={status} onChange={setStatus} />
 
-      <Card className="p-0 overflow-hidden">
+      <Card className="overflow-hidden p-0">
         {isLoading ? (
-          <div className="p-6 space-y-4">
+          <div className="space-y-4 p-6">
             {INVOICE_SKELETON_KEYS.map((key) => (
               <Skeleton key={key} className="h-12 w-full" />
             ))}
@@ -80,9 +68,7 @@ export default function InvoicesPage() {
             <EmptyState
               title="No invoices found"
               description="Import invoice documents or create records to start the payable review queue."
-              action={
-                <Button onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>
-              }
+              action={<Button variant="accent" onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>}
             />
           </div>
         ) : (
@@ -106,13 +92,11 @@ export default function InvoicesPage() {
                   <TableCell className="font-medium text-[var(--rg-text-primary)]">
                     {inv.vendorNameRaw || "Unknown"}
                   </TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">
-                    {inv.invoiceNumber || "N/A"}
+                  <TableCell className="text-[var(--rg-text-muted)]">{inv.invoiceNumber || "N/A"}</TableCell>
+                  <TableCell className="font-medium text-[var(--rg-text-primary)]">
+                    {formatUSDC(inv.amountBaseUnits)}
                   </TableCell>
-                  <TableCell className="font-medium">{formatUSDC(inv.amountBaseUnits)}</TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">
-                    {formatDate(inv.createdAt)}
-                  </TableCell>
+                  <TableCell className="text-[var(--rg-text-muted)]">{formatDate(inv.createdAt)}</TableCell>
                   <TableCell>
                     <Badge status={inv.status} variant="dot" />
                   </TableCell>

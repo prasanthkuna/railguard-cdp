@@ -10,6 +10,8 @@
     "typecheck": "next build --no-lint"
   },
   "dependencies": {
+    "@coinbase/cds-web": "^9.10.2",
+    "framer-motion": "^10",
     "lucide-react": "^0.470.0",
     "next": "15",
     "react": "19.0.0",

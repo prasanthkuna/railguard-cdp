@@ -2,6 +2,7 @@
 
 import { UploadCloud } from "lucide-react"
 import * as React from "react"
+import { cn } from "../../lib/cn"
 
 export interface FileUploadProps {
   onFileSelect: (file: File) => void
@@ -42,11 +43,12 @@ export function FileUpload({
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-[var(--rg-radius-lg)] transition-colors ${
+      className={cn(
+        "relative flex h-64 w-full flex-col items-center justify-center rounded-[var(--rg-radius-lg)] border-2 border-dashed transition",
         isDragging
-          ? "border-[var(--rg-brand)] bg-[var(--rg-surface-secondary)]"
-          : "border-[var(--rg-border)] bg-[var(--rg-surface-light)] hover:bg-[var(--rg-surface-secondary)]"
-      }`}
+          ? "border-[var(--rg-brand)] bg-[var(--rg-bg-primary-wash)]"
+          : "border-[var(--rg-border)] bg-[var(--rg-bg-base)] hover:border-[var(--rg-brand-muted)] hover:bg-[var(--rg-bg-primary-wash)]",
+      )}
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
@@ -56,14 +58,16 @@ export function FileUpload({
         type="file"
         accept={accept}
         onChange={handleChange}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       />
-      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-        <UploadCloud className="w-10 h-10 mb-3 text-[var(--rg-text-muted)]" />
-        <p className="mb-2 text-sm text-[var(--rg-text-muted)]">
-          <span className="font-semibold">Click to upload</span> or drag and drop
+      <div className="flex flex-col items-center justify-center px-6 text-center">
+        <div className="mb-4 rounded-full bg-[var(--rg-bg-primary-wash)] p-3">
+          <UploadCloud className="h-8 w-8 text-[var(--rg-brand)]" />
+        </div>
+        <p className="mb-1 text-sm text-[var(--rg-text-secondary)]">
+          <span className="font-semibold text-[var(--rg-brand)]">Click to upload</span> or drag and drop
         </p>
-        <p className="text-xs text-[var(--rg-text-muted)]">PDF, PNG, JPG (MAX. 10MB)</p>
+        <p className="text-xs text-[var(--rg-text-muted)]">PDF, PNG, JPG — max 10MB</p>
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-# Payment invariants (railguard-cdp)
+# Payment invariants (Railguard / coinbase)
 
 Canonical financial invariants for CDP execution and reconciliation. Each maps to implementation and tests.
 
@@ -11,7 +11,7 @@ Canonical financial invariants for CDP execution and reconciliation. Each maps t
 | **INV-005** | Reconciliation is idempotent — repeated runs do not double-commit or double-release. | `transitionAfterSettlementVerification` with `alreadyCommitted` | `payment-lifecycle.test.ts` (late confirmation), `reconcile.test.ts` |
 | **INV-006** | Material payment fact changes invalidate prior approvals. | Policy snapshot hash, `ensurePayable` / stale approval rejection | APF-005 in failure lab, `payment-lifecycle.test.ts` |
 | **INV-007** | Unavailable policy or state infrastructure fails closed. | x402-guard `authorizePayment` reserve/commit, execution blocked without guard | `x402-guard` `authorize.test.ts` |
-| **INV-008** | On-chain session limits survive middleware bypass. | railguard-new SignGate + hook (APF-006) | `forge test --match-contract PrdDemo` |
+| **INV-008** | On-chain session limits survive middleware bypass. | railguard-new Authority Engine + hook (APF-006) | `forge test --match-contract PrdDemo` |
 
 ## State machine
 

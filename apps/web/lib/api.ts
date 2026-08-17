@@ -273,6 +273,28 @@ export const api = {
       body: JSON.stringify({ id, idempotencyKey }),
     }),
 
+  // v5 Financial Authority API
+  createFinancialIntent: (body: Record<string, unknown>) =>
+    apiFetch<{ intent: Record<string, unknown>; status: string }>("/v1/intents", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  authorizeFinancialIntent: (intentId: string) =>
+    apiFetch<{ grant: Record<string, unknown>; status: string }>(`/v1/intents/${intentId}/authorize`, {
+      method: "POST",
+      body: "{}",
+    }),
+  getExecution: (executionId: string) =>
+    apiFetch<import("./types").V5ExecutionResponse>(`/v1/executions/${executionId}`),
+  getExecutionEvidence: (executionId: string) =>
+    apiFetch<import("./types").V5EvidenceResponse>(`/v1/executions/${executionId}/evidence`),
+  getPaymentIntentEvidence: (paymentIntentId: string) =>
+    apiFetch<import("./types").V5EvidenceResponse>(`/v1/payment-intents/${paymentIntentId}/evidence`),
+  getFinancialMetrics: () =>
+    apiFetch<{ fundsAtRisk: string; unknownExecutionCount: number; budgetUtilization: number }>(
+      "/v1/metrics/financial",
+    ),
+
   // Audit
   getAuditTrail: (entityType: string, entityID: string) =>
     apiFetch<{ auditEvents: AuditEvent[] }>(`/audit/${entityType}/${entityID}`),

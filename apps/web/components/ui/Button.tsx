@@ -1,45 +1,46 @@
 import { Loader2 } from "lucide-react"
 import * as React from "react"
+import { cn } from "../../lib/cn"
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "danger"
+  variant?: "primary" | "secondary" | "ghost" | "danger" | "accent"
   size?: "sm" | "md" | "lg"
   isLoading?: boolean
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    { className, variant = "primary", size = "md", isLoading, children, disabled, ...props },
-    ref,
-  ) => {
-    const baseStyles =
-      "inline-flex items-center justify-center font-sans font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none"
-
+  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
     const variants = {
       primary:
-        "bg-[var(--rg-brand)] text-white hover:bg-[var(--rg-brand-hover)] rounded-[var(--rg-radius-pill)]",
+        "bg-[var(--rg-brand)] text-white hover:bg-[var(--rg-accent-hover)] shadow-[var(--rg-shadow-glow)]",
+      accent:
+        "bg-[var(--rg-brand)] text-white hover:bg-[var(--rg-accent-hover)] shadow-[var(--rg-shadow-glow)]",
       secondary:
-        "bg-[var(--rg-surface-secondary)] text-[var(--rg-text-primary)] hover:bg-[var(--rg-border)] rounded-[var(--rg-radius-pill)]",
-      ghost:
-        "bg-transparent text-[var(--rg-text-muted)] hover:text-[var(--rg-text-primary)] hover:bg-[var(--rg-surface-secondary)] rounded-[var(--rg-radius-pill)]",
+        "border border-[var(--rg-border)] bg-[var(--rg-bg-base)] text-[var(--rg-text-primary)] hover:bg-[var(--rg-bg-hover)]",
+      ghost: "text-[var(--rg-text-secondary)] hover:bg-[var(--rg-bg-hover)] hover:text-[var(--rg-text-primary)]",
       danger:
-        "bg-[var(--rg-status-block)] text-white hover:opacity-90 rounded-[var(--rg-radius-pill)]",
+        "border border-[rgba(207,32,47,0.25)] bg-[var(--rg-bg-negative-wash)] text-[var(--rg-state-regret)] hover:bg-[rgba(207,32,47,0.08)]",
     }
 
     const sizes = {
-      sm: "h-8 px-4 text-sm",
-      md: "h-14 px-8 text-base", // 56px height per Coinbase
-      lg: "h-16 px-10 text-lg",
+      sm: "h-9 px-3.5 rg-caption normal-case",
+      md: "h-10 px-4 rg-label-1",
+      lg: "h-11 px-5 rg-label-1",
     }
 
     return (
       <button
         ref={ref}
-        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className || ""}`}
+        className={cn(
+          "inline-flex items-center justify-center gap-2 rounded-[var(--rg-radius-pill)] font-semibold transition disabled:pointer-events-none disabled:opacity-45",
+          variants[variant],
+          sizes[size],
+          className,
+        )}
         disabled={disabled || isLoading}
         {...props}
       >
-        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {children}
       </button>
     )

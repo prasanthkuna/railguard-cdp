@@ -1,0 +1,12 @@
+{
+  "name": "@railguard/demo-agent",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "dependencies": {
+    "@railguard/sdk": "workspace:*"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts"
+  }
+}

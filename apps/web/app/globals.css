@@ -2,39 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* -------------------------------------------
-   RAILGUARD DESIGN SYSTEM
-   Coinbase-inspired tokens
-   ------------------------------------------- */
+/* ============================================================
+   RAILGUARD × COINBASE DESIGN SYSTEM (CDS Light)
+   Tokens aligned with cds.coinbase.com default light theme
+   ============================================================ */
 
 :root {
-  /* Brand Colors */
-  --rg-brand: #0052ff;
-  --rg-brand-hover: #578bfa;
-  --rg-brand-link: #0667d0;
+  /* CDS semantic surfaces (light) */
+  --rg-bg-base: rgb(255, 255, 255);
+  --rg-bg-elevated: rgb(255, 255, 255);
+  --rg-bg-alternate: rgb(247, 248, 249);
+  --rg-bg-panel: rgb(255, 255, 255);
+  --rg-bg-glass: rgb(255, 255, 255);
+  --rg-bg-glass-strong: rgb(255, 255, 255);
+  --rg-bg-hover: rgb(247, 248, 249);
+  --rg-bg-active: rgb(238, 240, 243);
+  --rg-bg-primary-wash: rgb(245, 248, 255);
+  --rg-bg-positive-wash: rgb(245, 255, 251);
+  --rg-bg-negative-wash: rgb(255, 245, 246);
+  --rg-bg-warning-wash: rgb(255, 250, 245);
 
-  /* Surfaces */
-  --rg-surface-light: #ffffff;
-  --rg-surface-dark: #0a0b0d;
-  --rg-surface-secondary: #eef0f3;
-  --rg-surface-card-dark: #282b31;
-  --rg-surface-subtle: rgba(247, 247, 247, 0.88);
+  /* CDS text */
+  --rg-text-primary: rgb(10, 11, 13);
+  --rg-text-secondary: rgb(91, 97, 110);
+  --rg-text-muted: rgb(91, 97, 110);
+  --rg-text-inverse: rgb(255, 255, 255);
 
-  /* Text */
-  --rg-text-primary: #0a0b0d;
-  --rg-text-inverse: #ffffff;
-  --rg-text-muted: #5b616e;
+  /* CDS brand — Coinbase blue */
+  --rg-accent: rgb(0, 82, 255);
+  --rg-accent-hover: rgb(0, 75, 235);
+  --rg-accent-dim: rgb(245, 248, 255);
+  --rg-accent-glow: rgba(0, 82, 255, 0.18);
+  --rg-brand: rgb(0, 82, 255);
+  --rg-brand-dim: rgb(245, 248, 255);
+  --rg-brand-muted: rgb(115, 162, 255);
 
-  /* Borders */
+  /* CDS semantic states */
+  --rg-state-calm: rgb(0, 82, 255);
+  --rg-state-joy: rgb(9, 133, 81);
+  --rg-state-caution: rgb(207, 71, 14);
+  --rg-state-regret: rgb(207, 32, 47);
+
+  --rg-status-allow: var(--rg-state-joy);
+  --rg-status-block: var(--rg-state-regret);
+  --rg-status-escalate: var(--rg-state-caution);
+  --rg-status-info: var(--rg-brand);
+  --rg-status-neutral: rgb(137, 144, 158);
+
+  /* CDS lines */
   --rg-border: rgba(91, 97, 110, 0.2);
+  --rg-border-strong: rgba(91, 97, 110, 0.35);
+  --rg-border-accent: rgb(115, 162, 255);
 
-  /* Policy Status */
-  --rg-status-allow: #00c853;
-  --rg-status-block: #ff3d00;
-  --rg-status-escalate: #ff9100;
-  --rg-status-info: #0052ff;
+  /* CDS radius */
+  --rg-radius-sm: 8px;
+  --rg-radius-md: 12px;
+  --rg-radius-lg: 16px;
+  --rg-radius-xl: 24px;
+  --rg-radius-pill: 999px;
 
-  /* Spacing (8px base) */
+  /* CDS elevation */
+  --rg-shadow-sm: 0 8px 12px rgba(0, 0, 0, 0.08);
+  --rg-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --rg-shadow-glow: 0 0 0 1px rgba(0, 82, 255, 0.08);
+
+  --rg-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --rg-duration: 180ms;
+
   --rg-space-1: 4px;
   --rg-space-2: 8px;
   --rg-space-3: 12px;
@@ -42,112 +76,271 @@
   --rg-space-5: 20px;
   --rg-space-6: 24px;
   --rg-space-8: 32px;
-  --rg-space-10: 40px;
-  --rg-space-12: 48px;
-  --rg-space-16: 64px;
 
-  /* Border Radius */
-  --rg-radius-sm: 8px;
-  --rg-radius-md: 12px;
-  --rg-radius-lg: 24px;
-  --rg-radius-xl: 40px;
-  --rg-radius-pill: 56px;
-  --rg-radius-full: 100000px;
+  /* CDS typography — cds.coinbase.com/theming */
+  --defaultFont-sans: var(--font-body), "Inter", system-ui, -apple-system, sans-serif;
+  --defaultFont-mono: var(--font-mono), Menlo, Consolas, monospace;
 
-  /* Elevation */
-  --rg-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --rg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --rg-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --fontSize-display1: 4rem;
+  --lineHeight-display1: 4.5rem;
+  --fontWeight-display1: 400;
 
-  /* Transitions */
-  --rg-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --rg-duration: 200ms;
-}
+  --fontSize-display2: 3rem;
+  --lineHeight-display2: 3.5rem;
+  --fontWeight-display2: 400;
 
-/* === RESET & BASE === */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+  --fontSize-display3: 2.5rem;
+  --lineHeight-display3: 3rem;
+  --fontWeight-display3: 400;
 
-html,
-body {
-  background-color: var(--rg-surface-light);
-  color: var(--rg-text-primary);
-  font-family: var(--font-body), sans-serif;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-}
+  --fontSize-title1: 1.75rem;
+  --lineHeight-title1: 2.25rem;
+  --fontWeight-title1: 600;
 
-a {
-  color: var(--rg-brand-link);
-  text-decoration: none;
-  transition: color var(--rg-duration) var(--rg-ease);
-}
-a:hover {
-  color: var(--rg-brand-hover);
-}
+  --fontSize-title2: 1.75rem;
+  --lineHeight-title2: 2.25rem;
+  --fontWeight-title2: 400;
 
-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-}
+  --fontSize-title3: 1.25rem;
+  --lineHeight-title3: 1.75rem;
+  --fontWeight-title3: 600;
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--rg-text-primary);
-  margin-bottom: var(--rg-space-4);
+  --fontSize-title4: 1.25rem;
+  --lineHeight-title4: 1.75rem;
+  --fontWeight-title4: 400;
+
+  --fontSize-headline: 1rem;
+  --lineHeight-headline: 1.5rem;
+  --fontWeight-headline: 600;
+
+  --fontSize-body: 1rem;
+  --lineHeight-body: 1.5rem;
+  --fontWeight-body: 400;
+
+  --fontSize-label1: 0.875rem;
+  --lineHeight-label1: 1.25rem;
+  --fontWeight-label1: 600;
+
+  --fontSize-label2: 0.875rem;
+  --lineHeight-label2: 1.25rem;
+  --fontWeight-label2: 400;
+
+  --fontSize-caption: 0.8125rem;
+  --lineHeight-caption: 1rem;
+  --fontWeight-caption: 600;
+
+  --fontSize-legal: 0.8125rem;
+  --lineHeight-legal: 1rem;
+  --fontWeight-legal: 400;
 }
 
-h1 {
-  font-family: var(--font-display), sans-serif;
-  font-size: 80px;
-  line-height: 1.0;
-  font-weight: 400;
-  letter-spacing: -0.02em;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+    background: var(--rg-bg-alternate);
+    color: var(--rg-text-primary);
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-body);
+    line-height: var(--lineHeight-body);
+    font-weight: var(--fontWeight-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% -20%, rgba(0, 82, 255, 0.08), transparent 60%),
+      linear-gradient(180deg, rgb(245, 248, 255) 0%, rgb(247, 248, 249) 28%, rgb(238, 240, 243) 100%);
+    background-attachment: fixed;
+  }
+
+  a {
+    color: var(--rg-brand);
+    text-decoration: none;
+    transition: color var(--rg-duration) var(--rg-ease);
+  }
+
+  a:hover {
+    color: var(--rg-accent-hover);
+  }
+
+  ::selection {
+    background: rgba(0, 82, 255, 0.16);
+    color: var(--rg-text-primary);
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(91, 97, 110, 0.28);
+    border-radius: var(--rg-radius-pill);
+  }
 }
 
-h2 {
-  font-family: var(--font-display), sans-serif;
-  font-size: 64px;
-  line-height: 1.0;
-  font-weight: 400;
-  letter-spacing: -0.01em;
+@layer components {
+  .rg-glass {
+    background: var(--rg-bg-glass);
+    border: 1px solid var(--rg-border);
+    box-shadow: var(--rg-shadow-sm);
+  }
+
+  .rg-glass-strong {
+    background: var(--rg-bg-glass-strong);
+    border: 1px solid var(--rg-border);
+    box-shadow: var(--rg-shadow-md);
+  }
+
+  .rg-panel {
+    background: var(--rg-bg-panel);
+    border: 1px solid var(--rg-border);
+    border-radius: var(--rg-radius-lg);
+    box-shadow: var(--rg-shadow-sm);
+  }
+
+  .rg-card {
+    background: var(--rg-bg-elevated);
+    border: 1px solid var(--rg-border);
+    border-radius: var(--rg-radius-lg);
+    box-shadow: var(--rg-shadow-sm);
+  }
+
+  .rg-wash-blue {
+    background: var(--rg-bg-primary-wash);
+    border: 1px solid rgba(0, 82, 255, 0.12);
+  }
+
+  .rg-mono {
+    font-family: var(--defaultFont-mono);
+  }
+
+  .rg-display-1 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-display1);
+    line-height: var(--lineHeight-display1);
+    font-weight: var(--fontWeight-display1);
+  }
+
+  .rg-display-2 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-display2);
+    line-height: var(--lineHeight-display2);
+    font-weight: var(--fontWeight-display2);
+  }
+
+  .rg-display-3 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-display3);
+    line-height: var(--lineHeight-display3);
+    font-weight: var(--fontWeight-display3);
+  }
+
+  .rg-title-1 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-title1);
+    line-height: var(--lineHeight-title1);
+    font-weight: var(--fontWeight-title1);
+  }
+
+  .rg-title-3 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-title3);
+    line-height: var(--lineHeight-title3);
+    font-weight: var(--fontWeight-title3);
+  }
+
+  .rg-headline {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-headline);
+    line-height: var(--lineHeight-headline);
+    font-weight: var(--fontWeight-headline);
+  }
+
+  .rg-body {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-body);
+    line-height: var(--lineHeight-body);
+    font-weight: var(--fontWeight-body);
+  }
+
+  .rg-label-1 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-label1);
+    line-height: var(--lineHeight-label1);
+    font-weight: var(--fontWeight-label1);
+  }
+
+  .rg-label-2 {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-label2);
+    line-height: var(--lineHeight-label2);
+    font-weight: var(--fontWeight-label2);
+  }
+
+  .rg-caption {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-caption);
+    line-height: var(--lineHeight-caption);
+    font-weight: var(--fontWeight-caption);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .rg-legal {
+    font-family: var(--defaultFont-sans);
+    font-size: var(--fontSize-legal);
+    line-height: var(--lineHeight-legal);
+    font-weight: var(--fontWeight-legal);
+  }
+
+  .rg-page-enter {
+    animation: rg-fade-up 0.4s var(--rg-ease) both;
+  }
+
+  .rg-stagger > * {
+    animation: rg-fade-up 0.45s var(--rg-ease) both;
+  }
+
+  .rg-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .rg-stagger > *:nth-child(2) { animation-delay: 40ms; }
+  .rg-stagger > *:nth-child(3) { animation-delay: 80ms; }
+  .rg-stagger > *:nth-child(4) { animation-delay: 120ms; }
+  .rg-stagger > *:nth-child(5) { animation-delay: 160ms; }
+  .rg-stagger > *:nth-child(6) { animation-delay: 200ms; }
+
+  .rg-pulse-ring {
+    animation: rg-pulse 2.4s ease-in-out infinite;
+  }
 }
 
-h3 {
-  font-family: var(--font-sans), sans-serif;
-  font-size: 36px;
-  line-height: 1.11;
-  font-weight: 400;
+@keyframes rg-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-h4 {
-  font-family: var(--font-sans), sans-serif;
-  font-size: 32px;
-  line-height: 1.13;
-  font-weight: 400;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--rg-border);
-  border-radius: var(--rg-radius-full);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--rg-text-muted);
+@keyframes rg-pulse {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
 }

@@ -6,6 +6,7 @@
       "name": "railguard",
       "dependencies": {
         "@coinbase/cdp-sdk": "^1.48.2",
+        "@modelcontextprotocol/sdk": "^1.13.1",
         "@workos-inc/node": "^9.1.0",
         "@x402-guard/core": "workspace:*",
         "@x402-guard/middleware": "workspace:*",
@@ -33,6 +34,13 @@
         "@x402-guard/middleware": "workspace:*",
         "@x402-guard/policy": "workspace:*",
         "@x402-guard/receipts": "workspace:*",
+      },
+    },
+    "apps/demo-agent": {
+      "name": "@railguard/demo-agent",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/sdk": "workspace:*",
       },
     },
     "apps/web": {
@@ -70,13 +78,44 @@
       "name": "@railguard/auth",
       "version": "0.1.0",
     },
+    "packages/authority": {
+      "name": "@railguard/authority",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
+    },
     "packages/cdp": {
       "name": "@railguard/cdp",
       "version": "0.1.0",
     },
+    "packages/cli": {
+      "name": "@railguard/cli",
+      "version": "0.5.0",
+      "bin": {
+        "railguard": "./src/index.ts",
+      },
+      "dependencies": {
+        "@railguard/sdk": "workspace:*",
+      },
+    },
     "packages/db": {
       "name": "@railguard/db",
       "version": "0.1.0",
+    },
+    "packages/evidence": {
+      "name": "@railguard/evidence",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
+    },
+    "packages/execution": {
+      "name": "@railguard/execution",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
     },
     "packages/kernel": {
       "name": "@railguard/kernel",
@@ -85,9 +124,41 @@
         "@railguard/cdp": "workspace:*",
       },
     },
+    "packages/mcp": {
+      "name": "@railguard/mcp",
+      "version": "0.5.0",
+      "bin": {
+        "railguard-mcp": "./src/server.ts",
+      },
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.13.1",
+        "@railguard/sdk": "workspace:*",
+      },
+    },
+    "packages/observability": {
+      "name": "@railguard/observability",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
+    },
     "packages/policy": {
       "name": "@railguard/policy",
       "version": "0.1.0",
+    },
+    "packages/reconciliation": {
+      "name": "@railguard/reconciliation",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
+    },
+    "packages/sdk": {
+      "name": "@railguard/sdk",
+      "version": "0.5.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+      },
     },
     "packages/settlement": {
       "name": "@railguard/settlement",
@@ -389,13 +460,31 @@
 
     "@railguard/auth": ["@railguard/auth@workspace:packages/auth"],
 
+    "@railguard/authority": ["@railguard/authority@workspace:packages/authority"],
+
     "@railguard/cdp": ["@railguard/cdp@workspace:packages/cdp"],
+
+    "@railguard/cli": ["@railguard/cli@workspace:packages/cli"],
 
     "@railguard/db": ["@railguard/db@workspace:packages/db"],
 
+    "@railguard/demo-agent": ["@railguard/demo-agent@workspace:apps/demo-agent"],
+
+    "@railguard/evidence": ["@railguard/evidence@workspace:packages/evidence"],
+
+    "@railguard/execution": ["@railguard/execution@workspace:packages/execution"],
+
     "@railguard/kernel": ["@railguard/kernel@workspace:packages/kernel"],
 
+    "@railguard/mcp": ["@railguard/mcp@workspace:packages/mcp"],
+
+    "@railguard/observability": ["@railguard/observability@workspace:packages/observability"],
+
     "@railguard/policy": ["@railguard/policy@workspace:packages/policy"],
+
+    "@railguard/reconciliation": ["@railguard/reconciliation@workspace:packages/reconciliation"],
+
+    "@railguard/sdk": ["@railguard/sdk@workspace:packages/sdk"],
 
     "@railguard/settlement": ["@railguard/settlement@workspace:packages/settlement"],
 
@@ -915,9 +1004,9 @@
 
     "micromatch": ["micromatch@4.0.8", "", { "dependencies": { "braces": "^3.0.3", "picomatch": "^2.3.1" } }, "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA=="],
 
-    "mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
+    "mime-db": ["mime-db@1.54.0", "", {}, "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ=="],
 
-    "mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
+    "mime-types": ["mime-types@3.0.2", "", { "dependencies": { "mime-db": "^1.54.0" } }, "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A=="],
 
     "mitt": ["mitt@3.0.1", "", {}, "sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw=="],
 
@@ -1201,8 +1290,6 @@
 
     "@x402-guard/receipts/@types/node": ["@types/node@22.20.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q=="],
 
-    "accepts/mime-types": ["mime-types@3.0.2", "", { "dependencies": { "mime-db": "^1.54.0" } }, "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A=="],
-
     "anymatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
     "body-parser/content-type": ["content-type@2.0.0", "", {}, "sha512-j/O/d7GcZCyNl7/hwZAb606rzqkyvaDctLmckbxLzHvFBzTJHuGEdodATcP3yIRoDrLHkIATJuvzbFlp/ki2cQ=="],
@@ -1211,9 +1298,9 @@
 
     "chokidar/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
 
-    "express/mime-types": ["mime-types@3.0.2", "", { "dependencies": { "mime-db": "^1.54.0" } }, "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A=="],
-
     "fast-glob/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
+
+    "form-data/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 
     "framer-motion/tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
@@ -1233,13 +1320,9 @@
 
     "rollup/fsevents": ["fsevents@2.3.3", "", { "os": "darwin" }, "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw=="],
 
-    "send/mime-types": ["mime-types@3.0.2", "", { "dependencies": { "mime-db": "^1.54.0" } }, "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A=="],
-
     "terser/commander": ["commander@2.20.3", "", {}, "sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ=="],
 
     "type-is/content-type": ["content-type@2.0.0", "", {}, "sha512-j/O/d7GcZCyNl7/hwZAb606rzqkyvaDctLmckbxLzHvFBzTJHuGEdodATcP3yIRoDrLHkIATJuvzbFlp/ki2cQ=="],
-
-    "type-is/mime-types": ["mime-types@3.0.2", "", { "dependencies": { "mime-db": "^1.54.0" } }, "sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A=="],
 
     "viem/abitype": ["abitype@1.2.3", "", { "peerDependencies": { "typescript": ">=5.0.4", "zod": "^3.22.0 || ^4.0.0" }, "optionalPeers": ["typescript", "zod"] }, "sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg=="],
 
@@ -1253,13 +1336,7 @@
 
     "@inquirer/core/wrap-ansi/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
 
-    "accepts/mime-types/mime-db": ["mime-db@1.54.0", "", {}, "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ=="],
-
-    "express/mime-types/mime-db": ["mime-db@1.54.0", "", {}, "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ=="],
-
-    "send/mime-types/mime-db": ["mime-db@1.54.0", "", {}, "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ=="],
-
-    "type-is/mime-types/mime-db": ["mime-db@1.54.0", "", {}, "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ=="],
+    "form-data/mime-types/mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
 
     "@inquirer/core/wrap-ansi/string-width/emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 

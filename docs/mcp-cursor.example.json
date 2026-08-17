@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "railguard": {
+      "command": "bun",
+      "args": ["run", "packages/mcp/src/server.ts"],
+      "env": {
+        "RAILGUARD_BASE_URL": "http://127.0.0.1:4000",
+        "RAILGUARD_ACCESS_TOKEN": ""
+      }
+    }
+  }
+}

@@ -1,9 +1,13 @@
 # dependencies
 node_modules/
-# Local junction to sibling repo (not Cloud). Vendored copy lives in vendor/x402-guard.
+vendor/**/node_modules/
+vendor/x402-guard/**/node_modules/
+
+# Local junction to sibling repo (vendored copy lives in vendor/x402-guard)
 /x402-guard/
 !vendor/x402-guard/
 !vendor/x402-guard/**
+vendor/x402-guard/**/node_modules/
 
 # build outputs
 .next/
@@ -12,12 +16,16 @@ dist/
 !vendor/x402-guard/**/dist/**
 build/
 coverage/
-vendor/**/node_modules/
 .turbo/
 *.tsbuildinfo
 
 # encore
 .encore/
+/.encore
+encore.gen.go
+encore.gen.cue
+/encore.gen/**
+!/encore.gen/package.json
 .playwright-mcp/
 
 # deployment / local tooling
@@ -25,7 +33,7 @@ vendor/**/node_modules/
 .skills/
 .pnpm-store/
 
-# local env
+# local env & secrets
 .env
 .env.local
 .env.*.local
@@ -43,27 +51,32 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
-encore.gen.go
-encore.gen.cue
-/.encore
-/encore.gen/**
-!/encore.gen/package.json
+*.code-workspace
 
-.vercel
-/encore.gen
+# Personal / local artifacts — never commit
+*.pdf
+*.b64
+*.b64.txt
+.resume*
+Prasanth_*
+
+# Accidental path artifacts (CapCut / tilde expansion)
+~/
+~/**/
+**/CapCut/
+
+# Script outputs
+scripts/.showcase-seed-out.json
+scripts/*-out.json
 
 # Private — interview prep, product PRDs, video production (local only)
 docs/private/
 apps/video/
 notes/
 *.local.md
-*.code-workspace
 scripts/capture-*.ts
 scripts/extract-*.ts
 scripts/finalize-*.ts
 scripts/generate-campaign-assets.ts
 scripts/render-*.ps1
 scripts/save-shot.ts
-
-vendor/**/node_modules/
-

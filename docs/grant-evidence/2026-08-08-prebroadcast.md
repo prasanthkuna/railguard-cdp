@@ -16,7 +16,7 @@
 
 ## Deferred (P3 / other Step 4 lanes)
 - Outbox → real bus
-- BUDGET_AUTHORITY=postgres on SignGate staging
+- BUDGET_AUTHORITY=postgres on Authority Engine staging
 - npm publish / repo rename
 - Live vault CDP + KMS
 
@@ -30,5 +30,6 @@
 - healthz revision: b7aac64 / deploy 20mluquagip8d37g72ug
 
 ## Console E2E (WorkOS session)
-- Dashboard loads for prasanthkuna@gmail.com
-- Audit / Vendors / Invoices reachable after auth
+- Dashboard loads for prasanthkuna@gmail.com after Google AuthKit
+- Follow-up: FE no longer clears session on HTTP 403 (only 401) — ship 483cc3f / latest Vercel prod
+- Full data demo still uses demo/curated orgs; WorkOS org is a fresh tenant after first login

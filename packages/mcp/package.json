@@ -1,0 +1,16 @@
+{
+  "name": "@railguard/mcp",
+  "private": true,
+  "version": "0.5.0",
+  "description": "Railguard MCP server — authorize, execute, verify tools for AI agents",
+  "type": "module",
+  "bin": {
+    "railguard-mcp": "./src/server.ts"
+  },
+  "dependencies": {
+    "@railguard/sdk": "workspace:*"
+  },
+  "scripts": {
+    "start": "bun run src/server.ts"
+  }
+}

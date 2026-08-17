@@ -25,7 +25,7 @@ function guardForOrganization(organizationID: string): X402Guard {
         allowedAssets: ["USDC"],
         allowedNetworks: ["base-sepolia", "eip155:84532"],
       },
-      policyVersion: "railguard-cdp-v0.1.0",
+      policyVersion: "railguard-v5",
       stateStore: isX402GuardEnabled() ? durableStore : undefined,
     })
     guards.set(organizationID, guard)

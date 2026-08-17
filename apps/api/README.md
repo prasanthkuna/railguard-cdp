@@ -6,6 +6,18 @@ Detailed endpoint notes live in [docs/api/endpoints.md](../../docs/api/endpoints
 
 ## Current endpoints
 
+Legacy invoice path plus v5 financial authority API. Full list: [docs/api/endpoints.md](../../docs/api/endpoints.md).
+
+### v5
+
+- `POST /v1/intents`
+- `POST /v1/intents/:id/authorize`
+- `POST /v1/intents/:id/execute`
+- `GET /v1/executions/:id`
+- `GET /v1/executions/:id/evidence`
+
+### Legacy (invoice → CDP)
+
 - `GET /health`
 - `GET /invoices`
 - `GET /invoices/:id`

@@ -2,10 +2,10 @@
 
 import { Download } from "lucide-react"
 import * as React from "react"
+import { PageHeader, SectionCard } from "../../components/design-system"
 import { AuditTimeline } from "../../components/ui/AuditTimeline"
 import { Button } from "../../components/ui/Button"
-import { Card, CardHeader, CardTitle } from "../../components/ui/Card"
-import { Input } from "../../components/ui/Input"
+import { Input, SelectField } from "../../components/ui/Input"
 import { api } from "../../lib/api"
 import { getErrorMessage } from "../../lib/errors"
 import { useWorkspace } from "../../lib/hooks"
@@ -15,15 +15,12 @@ export default function AuditPage() {
   const { workspace } = useWorkspace()
   const [entityType, setEntityType] = React.useState("organization")
   const [entityID, setEntityID] = React.useState("")
-
   const [events, setEvents] = React.useState<AuditEvent[]>([])
   const [loading, setLoading] = React.useState(false)
   const [searched, setSearched] = React.useState(false)
-
   const [exporting, setExporting] = React.useState(false)
   const [exportMessage, setExportMessage] = React.useState("")
 
-  // Set default entityID to workspace ID when available
   React.useEffect(() => {
     if (workspace && !entityID && entityType === "organization") {
       setEntityID(workspace.id)
@@ -77,29 +74,17 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
-            Audit Trail
-          </h1>
-          <p className="text-[var(--rg-text-muted)]">
-            Immutable ledger of policy decisions, approvals, and payment actions.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Compliance"
+        title="Audit Trail"
+        description="Immutable ledger of policy decisions, approvals, and payment actions."
+      />
 
-      <Card>
-        <form onSubmit={handleSearch} className="flex flex-col gap-4 sm:flex-row sm:items-end">
-          <div className="flex-1 space-y-1.5">
-            <label
-              htmlFor="audit-entity-type"
-              className="text-sm font-medium text-[var(--rg-text-primary)]"
-            >
-              Entity Type
-            </label>
-            <select
-              id="audit-entity-type"
-              className="flex h-12 w-full rounded-md border border-[var(--rg-border)] bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--rg-brand)]"
+      <SectionCard title="Query Ledger" description="Search append-only events by entity type and ID.">
+        <form onSubmit={handleSearch} className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="flex-1">
+            <SelectField
+              label="Entity Type"
               value={entityType}
               onChange={(e) => setEntityType(e.target.value)}
             >
@@ -107,9 +92,8 @@ export default function AuditPage() {
               <option value="invoice">Invoice</option>
               <option value="vendor">Vendor</option>
               <option value="payment_intent">Payment Intent</option>
-            </select>
+            </SelectField>
           </div>
-
           <div className="flex-[2]">
             <Input
               label="Entity ID"
@@ -119,47 +103,32 @@ export default function AuditPage() {
               required
             />
           </div>
-
-          <Button
-            type="submit"
-            isLoading={loading}
-            disabled={!entityID.trim() || loading}
-            className="w-full sm:w-auto"
-          >
+          <Button type="submit" variant="accent" isLoading={loading} disabled={!entityID.trim() || loading} className="w-full lg:w-auto">
             Search Ledger
           </Button>
         </form>
-      </Card>
+      </SectionCard>
 
-      {searched && (
-        <Card className="min-h-[400px]">
-          <CardHeader className="flex flex-row items-center justify-between pb-4">
-            <CardTitle className="text-lg">Event History</CardTitle>
-            {events.length > 0 && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="gap-2"
-                isLoading={exporting}
-                onClick={handleExport}
-              >
+      {searched ? (
+        <SectionCard
+          title="Event History"
+          action={
+            events.length > 0 ? (
+              <Button size="sm" variant="secondary" className="gap-2" isLoading={exporting} onClick={handleExport}>
                 <Download className="h-4 w-4" />
                 Export Evidence
               </Button>
-            )}
-          </CardHeader>
-          <div className="mt-4">
-            {exportMessage ? (
-              <p className="mb-4 text-sm text-[var(--rg-text-muted)]">{exportMessage}</p>
-            ) : null}
-            {loading ? (
-              <p className="text-sm text-[var(--rg-text-muted)]">Querying ledger...</p>
-            ) : (
-              <AuditTimeline events={events} />
-            )}
-          </div>
-        </Card>
-      )}
+            ) : undefined
+          }
+        >
+          {exportMessage ? <p className="mb-4 text-sm text-[var(--rg-text-muted)]">{exportMessage}</p> : null}
+          {loading ? (
+            <p className="text-sm text-[var(--rg-text-muted)]">Querying ledger...</p>
+          ) : (
+            <AuditTimeline events={events} />
+          )}
+        </SectionCard>
+      ) : null}
     </div>
   )
 }

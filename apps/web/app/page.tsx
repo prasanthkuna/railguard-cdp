@@ -1,11 +1,11 @@
 "use client"
 
-import { AlertTriangle, CheckCircle, FileClock, FileText, ShieldAlert } from "lucide-react"
+import { AlertTriangle, CheckCircle, FileClock, FileText, ShieldAlert, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import * as React from "react"
+import { HeroMetric, PageHeader, SectionCard, StatCard } from "../components/design-system"
 import { Button } from "../components/ui/Button"
-import { Card, CardHeader, CardTitle } from "../components/ui/Card"
 import { Skeleton } from "../components/ui/Skeleton"
 import { formatUSDC } from "../lib/format"
 import { useDashboard, useWorkspace } from "../lib/hooks"
@@ -25,14 +25,14 @@ export default function DashboardPage() {
 
   if (wsLoading || isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-8">
+        <Skeleton className="h-24 w-full max-w-xl" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {DASHBOARD_SKELETON_KEYS.map((key) => (
-            <Skeleton key={key} className="h-32 rounded-xl" />
+            <Skeleton key={key} className="h-36 rounded-[var(--rg-radius-lg)]" />
           ))}
         </div>
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-56 w-full rounded-[var(--rg-radius-xl)]" />
       </div>
     )
   }
@@ -41,109 +41,81 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
-            Control Center
-          </h1>
-          <p className="text-[var(--rg-text-muted)]">
-            Live invoice risk posture and approval health for {workspace.name}.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link href="/invoices/upload">
-            <Button className="gap-2">
-              <FileText className="h-4 w-4" />
-              Import Invoice
-            </Button>
-          </Link>
-          <Link href="/invoices">
-            <Button variant="secondary" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Review Queue
-            </Button>
-          </Link>
-        </div>
+      <PageHeader
+        eyebrow="Payment Control Room"
+        title="Control Center"
+        description={`Live invoice risk posture and approval health for ${workspace.name}.`}
+        actions={
+          <>
+            <Link href="/invoices/upload">
+              <Button variant="accent" className="gap-2">
+                <FileText className="h-4 w-4" />
+                Import Invoice
+              </Button>
+            </Link>
+            <Link href="/invoices">
+              <Button variant="secondary" className="gap-2">
+                Review Queue
+              </Button>
+            </Link>
+          </>
+        }
+      />
+
+      <div className="rg-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Pending Review"
+          value={data.pendingReview}
+          hint="Awaiting extraction or triage"
+          tone="neutral"
+          icon={FileClock}
+        />
+        <StatCard
+          label="Needs Approval"
+          value={data.needsApproval}
+          hint="Policy escalation required"
+          tone="caution"
+          icon={AlertTriangle}
+        />
+        <StatCard
+          label="Blocked"
+          value={data.blocked}
+          hint="Hard policy stops"
+          tone="regret"
+          icon={ShieldAlert}
+        />
+        <StatCard
+          label="Ready to Pay"
+          value={data.readyToPay}
+          hint="Cleared for execution"
+          tone="joy"
+          icon={CheckCircle}
+        />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card variant="stat" className="relative overflow-hidden">
-          <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-[var(--rg-surface-secondary)]" />
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-full bg-[var(--rg-surface-secondary)] p-2">
-              <FileClock className="h-5 w-5 text-[var(--rg-text-muted)]" />
+      <div className="grid gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <HeroMetric
+            label="Total Protected Volume"
+            value={formatUSDC(data.totalProtectedBaseUnits)}
+            sub="Gross payment volume screened with policy controls before broadcast."
+            accent="accent"
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <SectionCard
+            title="Risk Events"
+            description="Policy triggers requiring review or intervention."
+            glow={data.riskEventsDetected > 0 ? "caution" : "none"}
+          >
+            <div className="flex items-end justify-between gap-4">
+              <p className="rg-display-3 font-normal text-[var(--rg-state-caution)]">
+                {data.riskEventsDetected}
+              </p>
+              <Sparkles className="h-8 w-8 text-[var(--rg-text-muted)] opacity-40" />
             </div>
-            <h3 className="text-sm font-medium text-[var(--rg-text-muted)]">Pending Review</h3>
-          </div>
-          <p className="text-3xl font-semibold text-[var(--rg-text-primary)]">
-            {data.pendingReview}
-          </p>
-        </Card>
-
-        <Card variant="stat" className="relative overflow-hidden">
-          <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-orange-50" />
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-full bg-orange-100 p-2">
-              <AlertTriangle className="h-5 w-5 text-[var(--rg-status-escalate)]" />
-            </div>
-            <h3 className="text-sm font-medium text-[var(--rg-text-muted)]">Needs Approval</h3>
-          </div>
-          <p className="text-3xl font-semibold text-[var(--rg-text-primary)]">
-            {data.needsApproval}
-          </p>
-        </Card>
-
-        <Card variant="stat" className="relative overflow-hidden">
-          <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-red-50" />
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-full bg-red-100 p-2">
-              <ShieldAlert className="h-5 w-5 text-[var(--rg-status-block)]" />
-            </div>
-            <h3 className="text-sm font-medium text-[var(--rg-text-muted)]">Blocked</h3>
-          </div>
-          <p className="text-3xl font-semibold text-[var(--rg-text-primary)]">{data.blocked}</p>
-        </Card>
-
-        <Card variant="stat" className="relative overflow-hidden">
-          <div className="absolute right-0 top-0 -mr-4 -mt-4 h-16 w-16 rounded-full bg-blue-50" />
-          <div className="mb-4 flex items-center gap-2">
-            <div className="rounded-full bg-blue-100 p-2">
-              <CheckCircle className="h-5 w-5 text-[var(--rg-status-info)]" />
-            </div>
-            <h3 className="text-sm font-medium text-[var(--rg-text-muted)]">Ready to Pay</h3>
-          </div>
-          <p className="text-3xl font-semibold text-[var(--rg-text-primary)]">{data.readyToPay}</p>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card variant="dark">
-          <CardHeader>
-            <CardTitle className="text-lg">Total Protected</CardTitle>
-          </CardHeader>
-          <div className="flex h-32 flex-col justify-end">
-            <p className="text-5xl font-display font-light text-white">
-              {formatUSDC(data.totalProtectedBaseUnits)}
-            </p>
-            <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
-              Gross payment volume screened with policy controls
-            </p>
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Risk Events</CardTitle>
-          </CardHeader>
-          <div className="flex h-32 flex-col justify-end">
-            <p className="text-5xl font-display font-light text-[var(--rg-status-block)]">
-              {data.riskEventsDetected}
-            </p>
-            <p className="mt-2 text-sm text-[var(--rg-text-muted)]">
-              Triggered policy events requiring review or intervention
-            </p>
-          </div>
-        </Card>
+          </SectionCard>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 # apps/web
 
-Next.js operator console for PreBroadcast.
+Next.js operator console for Railguard (PreBroadcast UI).
 
 Current surfaces:
 

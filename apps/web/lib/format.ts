@@ -45,6 +45,7 @@ export function statusLabel(status: string): string {
     rejected: "Rejected",
     payment_intent_created: "Payment Created",
     executed: "Executed",
+    confirmed: "Confirmed",
     allow: "Allow",
     escalate: "Escalate",
     pending: "Pending",
@@ -57,6 +58,7 @@ export function statusColor(status: string): string {
     case "allow":
     case "approved":
     case "executed":
+    case "confirmed":
       return "var(--rg-status-allow)"
     case "block":
     case "blocked":
@@ -67,8 +69,54 @@ export function statusColor(status: string): string {
       return "var(--rg-status-escalate)"
     case "ready":
     case "payment_intent_created":
+    case "prepared":
+    case "submitted":
       return "var(--rg-status-info)"
     default:
       return "var(--rg-text-muted)"
   }
+}
+
+export function statusToneClass(status: string): string {
+  switch (status) {
+    case "allow":
+    case "approved":
+    case "executed":
+    case "confirmed":
+      return "bg-[var(--rg-bg-positive-wash)] text-[var(--rg-state-joy)] ring-[rgba(9,133,81,0.22)]"
+    case "block":
+    case "blocked":
+    case "rejected":
+      return "bg-[var(--rg-bg-negative-wash)] text-[var(--rg-state-regret)] ring-[rgba(207,32,47,0.22)]"
+    case "escalate":
+    case "needs_approval":
+      return "bg-[var(--rg-bg-warning-wash)] text-[var(--rg-state-caution)] ring-[rgba(207,71,14,0.22)]"
+    case "ready":
+    case "payment_intent_created":
+    case "prepared":
+    case "submitted":
+    case "info":
+      return "bg-[var(--rg-bg-primary-wash)] text-[var(--rg-brand)] ring-[rgba(0,82,255,0.18)]"
+    default:
+      return "bg-[var(--rg-bg-hover)] text-[var(--rg-text-muted)] ring-[var(--rg-border)]"
+  }
+}
+
+export function formatDateTime(iso?: string): string {
+  if (!iso) return "N/A"
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(iso))
+  } catch {
+    return iso
+  }
+}
+
+export function humanizeEventType(eventType: string): string {
+  return eventType.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }

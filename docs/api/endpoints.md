@@ -79,6 +79,20 @@ That keeps the operator-facing simulator aligned with the deterministic policy e
 
 Audit exports are produced asynchronously so the UI can request evidence bundles without blocking the main review flow.
 
+## v5 Financial Authority
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/v1/intents` | Create a `FinancialIntent` |
+| `POST` | `/v1/intents/:id/authorize` | Policy + budget → `AuthorizationGrant` |
+| `POST` | `/v1/intents/:id/execute` | Execute on selected rail (links to payment intent for CDP) |
+| `GET` | `/v1/executions/:id` | Execution status |
+| `GET` | `/v1/executions/:id/evidence` | Evidence envelope + explain payload |
+| `GET` | `/v1/payment-intents/:id/evidence` | Evidence by legacy payment intent id |
+| `GET` | `/v1/metrics/financial` | Financial SRE metrics |
+
+See [INTEGRATION.md](../INTEGRATION.md) for CLI, MCP, and SDK.
+
 ## WorkOS Integration
 
 | Method | Path | Purpose |

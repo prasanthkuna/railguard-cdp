@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import * as React from "react"
+import { PageHeader } from "../../components/design-system"
 import { Badge } from "../../components/ui/Badge"
 import { Button } from "../../components/ui/Button"
 import { Card } from "../../components/ui/Card"
@@ -27,24 +28,21 @@ export default function VendorsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-display tracking-tight text-[var(--rg-text-primary)]">
-            Vendors
-          </h1>
-          <p className="text-[var(--rg-text-muted)]">
-            Maintain payout counterparties, wallet approvals, and risk posture.
-          </p>
-        </div>
-        <Button className="gap-2" onClick={() => router.push("/vendors/new")}>
-          <Plus className="h-4 w-4" />
-          Add Counterparty
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Counterparties"
+        title="Vendors"
+        description="Maintain payout counterparties, wallet approvals, and risk posture."
+        actions={
+          <Button variant="accent" className="gap-2" onClick={() => router.push("/vendors/new")}>
+            <Plus className="h-4 w-4" />
+            Add Counterparty
+          </Button>
+        }
+      />
 
-      <Card className="p-0 overflow-hidden">
+      <Card className="overflow-hidden p-0">
         {isLoading ? (
-          <div className="p-6 space-y-4">
+          <div className="space-y-4 p-6">
             {VENDOR_SKELETON_KEYS.map((key) => (
               <Skeleton key={key} className="h-12 w-full" />
             ))}
@@ -54,7 +52,7 @@ export default function VendorsPage() {
             <EmptyState
               title="No vendors found"
               description="Create your approved vendor registry before releasing payments."
-              action={<Button onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>}
+              action={<Button variant="accent" onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>}
             />
           </div>
         ) : (
@@ -69,27 +67,25 @@ export default function VendorsPage() {
             </TableHeader>
             <TableBody>
               {vendors.map((vendor) => (
-                <TableRow
-                  key={vendor.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/vendors/${vendor.id}`)}
-                >
-                  <TableCell className="font-medium text-[var(--rg-text-primary)]">
-                    {vendor.name}
-                  </TableCell>
+                <TableRow key={vendor.id} className="cursor-pointer" onClick={() => router.push(`/vendors/${vendor.id}`)}>
+                  <TableCell className="font-medium text-[var(--rg-text-primary)]">{vendor.name}</TableCell>
                   <TableCell>
                     <Badge status={vendor.status} variant="dot" />
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`font-medium ${vendor.riskScore > 70 ? "text-[var(--rg-status-block)]" : vendor.riskScore > 30 ? "text-[var(--rg-status-escalate)]" : "text-[var(--rg-status-allow)]"}`}
+                      className={`font-medium ${
+                        vendor.riskScore > 70
+                          ? "text-[var(--rg-state-regret)]"
+                          : vendor.riskScore > 30
+                            ? "text-[var(--rg-state-caution)]"
+                            : "text-[var(--rg-state-joy)]"
+                      }`}
                     >
                       {vendor.riskScore}/100
                     </span>
                   </TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">
-                    {formatDate(vendor.createdAt)}
-                  </TableCell>
+                  <TableCell className="text-[var(--rg-text-muted)]">{formatDate(vendor.createdAt)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

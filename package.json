@@ -10,6 +10,7 @@
   "workspaces": [
     "apps/api",
     "apps/web",
+    "apps/demo-agent",
     "packages/*",
     "vendor/x402-guard/packages/*",
     "encore.gen"
@@ -42,6 +43,9 @@
     "video:pipeline": "powershell -ExecutionPolicy Bypass -File scripts/render-pro-pipeline.ps1",
     "render:demo-4k": "powershell -ExecutionPolicy Bypass -File scripts/render-railguard-demo.ps1",
     "verify:demo": "bun run scripts/seed-and-verify.ts",
+    "railguard": "bun run packages/cli/src/index.ts",
+    "railguard:mcp": "bun run packages/mcp/src/server.ts",
+    "test:v5": "bun test packages/kernel/src/v5.test.ts apps/api/cdpSection22.test.ts apps/api/cdpExecutionDriver.test.ts",
     "testnet-evidence": "bun run scripts/testnet-evidence.ts",
     "gate-d-evidence": "bun run scripts/gate-d-evidence.ts",
     "test:testnet": "cross-env TESTNET_INTEGRATION=1 bun test packages/settlement/src/base-sepolia.integration.test.ts",
