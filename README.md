@@ -1,7 +1,8 @@
-# Railguard (coinbase monorepo)
+# Railguard Control Plane (railguard-cdp)
 
-[![tests](https://img.shields.io/badge/API%20tests-bun%20passing-green)](./apps/api/payment-state.test.ts)
-[![evidence](https://img.shields.io/badge/evidence-Base%20Sepolia%20live-blue)](https://github.com/prasanthkuna/railguard-protocol/tree/master/evidence/cdp-base-sepolia)
+[![PR Checks](https://github.com/prasanthkuna/railguard-cdp/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/prasanthkuna/railguard-cdp/actions/workflows/pr-checks.yml)
+[![Testnet Evidence](https://github.com/prasanthkuna/railguard-cdp/actions/workflows/testnet-evidence.yml/badge.svg)](https://github.com/prasanthkuna/railguard-cdp/actions/workflows/testnet-evidence.yml)
+[![evidence](https://img.shields.io/badge/evidence-Base%20Sepolia-blue)](https://github.com/prasanthkuna/railguard-protocol/tree/master/evidence/cdp-base-sepolia)
 
 **Agent treasury control plane** — policy → authorize → execute → reconcile → evidence.
 
