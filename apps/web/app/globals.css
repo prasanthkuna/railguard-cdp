@@ -152,9 +152,17 @@
   }
 
   body {
-    background-image:
-      radial-gradient(ellipse 90% 60% at 50% -20%, rgba(0, 82, 255, 0.08), transparent 60%),
-      linear-gradient(180deg, rgb(245, 248, 255) 0%, rgb(247, 248, 249) 28%, rgb(238, 240, 243) 100%);
+    background-image: radial-gradient(
+        ellipse 90% 60% at 50% -20%,
+        rgba(0, 82, 255, 0.08),
+        transparent 60%
+      ),
+      linear-gradient(
+        180deg,
+        rgb(245, 248, 255) 0%,
+        rgb(247, 248, 249) 28%,
+        rgb(238, 240, 243) 100%
+      );
     background-attachment: fixed;
   }
 
@@ -311,12 +319,24 @@
     animation: rg-fade-up 0.45s var(--rg-ease) both;
   }
 
-  .rg-stagger > *:nth-child(1) { animation-delay: 0ms; }
-  .rg-stagger > *:nth-child(2) { animation-delay: 40ms; }
-  .rg-stagger > *:nth-child(3) { animation-delay: 80ms; }
-  .rg-stagger > *:nth-child(4) { animation-delay: 120ms; }
-  .rg-stagger > *:nth-child(5) { animation-delay: 160ms; }
-  .rg-stagger > *:nth-child(6) { animation-delay: 200ms; }
+  .rg-stagger > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .rg-stagger > *:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .rg-stagger > *:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .rg-stagger > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .rg-stagger > *:nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .rg-stagger > *:nth-child(6) {
+    animation-delay: 200ms;
+  }
 
   .rg-pulse-ring {
     animation: rg-pulse 2.4s ease-in-out infinite;
@@ -335,7 +355,8 @@
 }
 
 @keyframes rg-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.55;
     transform: scale(1);
   }

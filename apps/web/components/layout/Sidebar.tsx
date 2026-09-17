@@ -24,7 +24,9 @@ export function Sidebar() {
         </div>
         <div>
           <p className="rg-headline text-[var(--rg-text-primary)]">PreBroadcast</p>
-          <p className="rg-caption text-[var(--rg-text-muted)]">Built on Coinbase Developer Platform</p>
+          <p className="rg-caption text-[var(--rg-text-muted)]">
+            Built on Coinbase Developer Platform
+          </p>
         </div>
       </div>
 
@@ -46,7 +48,9 @@ export function Sidebar() {
               <item.icon
                 className={cn(
                   "h-4 w-4 shrink-0",
-                  isActive ? "text-[var(--rg-brand)]" : "text-[var(--rg-text-muted)] group-hover:text-[var(--rg-text-secondary)]",
+                  isActive
+                    ? "text-[var(--rg-brand)]"
+                    : "text-[var(--rg-text-muted)] group-hover:text-[var(--rg-text-secondary)]",
                 )}
               />
               {item.label}

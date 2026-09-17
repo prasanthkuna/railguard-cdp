@@ -85,35 +85,96 @@ export default function SettingsPage() {
       />
 
       <div className={devAuthEnabled ? "grid gap-6 lg:grid-cols-2" : "space-y-6"}>
-        <SectionCard title="Policy Thresholds" description="Configure automatic approval and risk evaluation rules.">
+        <SectionCard
+          title="Policy Thresholds"
+          description="Configure automatic approval and risk evaluation rules."
+        >
           <form onSubmit={handleSaveSettings} className="space-y-4">
-            <Input label="Approval Threshold (Base Units)" value={settings.approvalThresholdBaseUnits} onChange={(e) => setSettings({ ...settings, approvalThresholdBaseUnits: e.target.value })} />
-            <Input label="Hard Cap Limit (Base Units)" value={settings.hardCapBaseUnits} onChange={(e) => setSettings({ ...settings, hardCapBaseUnits: e.target.value })} />
+            <Input
+              label="Approval Threshold (Base Units)"
+              value={settings.approvalThresholdBaseUnits}
+              onChange={(e) =>
+                setSettings({ ...settings, approvalThresholdBaseUnits: e.target.value })
+              }
+            />
+            <Input
+              label="Hard Cap Limit (Base Units)"
+              value={settings.hardCapBaseUnits}
+              onChange={(e) => setSettings({ ...settings, hardCapBaseUnits: e.target.value })}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Allowed Token" value={settings.allowedToken} onChange={(e) => setSettings({ ...settings, allowedToken: e.target.value })} />
-              <Input label="Allowed Chain" value={settings.allowedChain} onChange={(e) => setSettings({ ...settings, allowedChain: e.target.value })} />
+              <Input
+                label="Allowed Token"
+                value={settings.allowedToken}
+                onChange={(e) => setSettings({ ...settings, allowedToken: e.target.value })}
+              />
+              <Input
+                label="Allowed Chain"
+                value={settings.allowedChain}
+                onChange={(e) => setSettings({ ...settings, allowedChain: e.target.value })}
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Amount Review Multiplier" type="number" step="0.1" value={settings.amountReviewMultiplier} onChange={(e) => setSettings({ ...settings, amountReviewMultiplier: Number(e.target.value) })} />
-              <Input label="Wallet Risk Threshold (0-100)" type="number" value={settings.walletRiskThreshold} onChange={(e) => setSettings({ ...settings, walletRiskThreshold: Number(e.target.value) })} />
+              <Input
+                label="Amount Review Multiplier"
+                type="number"
+                step="0.1"
+                value={settings.amountReviewMultiplier}
+                onChange={(e) =>
+                  setSettings({ ...settings, amountReviewMultiplier: Number(e.target.value) })
+                }
+              />
+              <Input
+                label="Wallet Risk Threshold (0-100)"
+                type="number"
+                value={settings.walletRiskThreshold}
+                onChange={(e) =>
+                  setSettings({ ...settings, walletRiskThreshold: Number(e.target.value) })
+                }
+              />
             </div>
             <div className="flex items-center justify-between pt-2">
               <span className="text-sm font-medium text-[var(--rg-state-joy)]">{successMsg}</span>
-              <Button type="submit" variant="accent" isLoading={loading} disabled={loading}>Save Settings</Button>
+              <Button type="submit" variant="accent" isLoading={loading} disabled={loading}>
+                Save Settings
+              </Button>
             </div>
           </form>
         </SectionCard>
 
         {devAuthEnabled ? (
-          <SectionCard title="Dev Mode Identity" description="Simulate different users and roles while dev header auth is enabled." glow="accent">
+          <SectionCard
+            title="Dev Mode Identity"
+            description="Simulate different users and roles while dev header auth is enabled."
+            glow="accent"
+          >
             <form onSubmit={handleSaveIdentity} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Organization ID" value={identity.organizationID} onChange={(e) => setIdentity({ ...identity, organizationID: e.target.value })} />
-                <Input label="User ID" value={identity.userID} onChange={(e) => setIdentity({ ...identity, userID: e.target.value })} />
+                <Input
+                  label="Organization ID"
+                  value={identity.organizationID}
+                  onChange={(e) => setIdentity({ ...identity, organizationID: e.target.value })}
+                />
+                <Input
+                  label="User ID"
+                  value={identity.userID}
+                  onChange={(e) => setIdentity({ ...identity, userID: e.target.value })}
+                />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Email" type="email" value={identity.email} onChange={(e) => setIdentity({ ...identity, email: e.target.value })} />
-                <SelectField label="Role" value={identity.role} onChange={(e) => setIdentity({ ...identity, role: e.target.value as DevIdentity["role"] })}>
+                <Input
+                  label="Email"
+                  type="email"
+                  value={identity.email}
+                  onChange={(e) => setIdentity({ ...identity, email: e.target.value })}
+                />
+                <SelectField
+                  label="Role"
+                  value={identity.role}
+                  onChange={(e) =>
+                    setIdentity({ ...identity, role: e.target.value as DevIdentity["role"] })
+                  }
+                >
                   <option value="owner">Owner</option>
                   <option value="finance">Finance</option>
                   <option value="approver">Approver</option>
@@ -121,7 +182,9 @@ export default function SettingsPage() {
                 </SelectField>
               </div>
               <div className="flex justify-end pt-2">
-                <Button type="submit" variant="secondary">Apply Identity</Button>
+                <Button type="submit" variant="secondary">
+                  Apply Identity
+                </Button>
               </div>
             </form>
           </SectionCard>

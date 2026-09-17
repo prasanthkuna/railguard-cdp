@@ -1,7 +1,7 @@
 /**
  * Demo agent — v5 metrics smoke test via REST.
  */
-import { resolveRailguardEnv, requireToken } from "@railguard/sdk/env"
+import { requireToken, resolveRailguardEnv } from "@railguard/sdk/env"
 
 const env = resolveRailguardEnv()
 const token = requireToken(env)

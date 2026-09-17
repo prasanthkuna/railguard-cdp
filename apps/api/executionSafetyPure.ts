@@ -18,10 +18,7 @@ export function getExecutionSafetyViolation(input: {
 }): ExecutionSafetyViolation | null {
   if (input.killSwitchActive) return "kill_switch"
 
-  if (
-    input.demoOrgAllowlist.length > 0 &&
-    !input.demoOrgAllowlist.includes(input.organizationID)
-  ) {
+  if (input.demoOrgAllowlist.length > 0 && !input.demoOrgAllowlist.includes(input.organizationID)) {
     return "org_not_allowed"
   }
 

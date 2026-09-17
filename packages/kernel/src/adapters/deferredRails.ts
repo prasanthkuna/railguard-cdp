@@ -1,3 +1,4 @@
+import type { AuthorizationGrant } from "../authority"
 /** Grant-phase rails — interface conformance only (v5 §19: not enabled in production) */
 import type {
   ExecutionObservation,
@@ -6,7 +7,6 @@ import type {
   PreparedExecution,
   SettlementResult,
 } from "../executionRail"
-import type { AuthorizationGrant } from "../authority"
 import type { FinancialIntent } from "../intent"
 
 function deferredRail(name: string): ExecutionRail {
@@ -32,4 +32,12 @@ export function deferredRailDescriptor(name: string) {
   return { name, enabled: false, reason: "grant-phase adapter" }
 }
 
-export type { ExecutionRail, PreparedExecution, ExecutionSubmission, ExecutionObservation, SettlementResult, FinancialIntent, AuthorizationGrant }
+export type {
+  ExecutionRail,
+  PreparedExecution,
+  ExecutionSubmission,
+  ExecutionObservation,
+  SettlementResult,
+  FinancialIntent,
+  AuthorizationGrant,
+}

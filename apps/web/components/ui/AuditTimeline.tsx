@@ -1,6 +1,6 @@
 import * as React from "react"
-import { formatDateTime, humanizeEventType, statusColor } from "../../lib/format"
 import { cn } from "../../lib/cn"
+import { formatDateTime, humanizeEventType, statusColor } from "../../lib/format"
 import type { AuditEvent } from "../../lib/types"
 
 function summarizeEvent(event: Record<string, unknown>): string | null {
@@ -43,10 +43,14 @@ export function AuditTimeline({ events }: { events: AuditEvent[] }) {
                 <p className="text-sm font-semibold text-[var(--rg-text-primary)]">
                   {humanizeEventType(event.eventType)}
                 </p>
-                <time className="text-xs text-[var(--rg-text-muted)]">{formatDateTime(event.createdAt)}</time>
+                <time className="text-xs text-[var(--rg-text-muted)]">
+                  {formatDateTime(event.createdAt)}
+                </time>
               </div>
 
-              {summary ? <p className="mt-1 text-sm text-[var(--rg-text-secondary)]">{summary}</p> : null}
+              {summary ? (
+                <p className="mt-1 text-sm text-[var(--rg-text-secondary)]">{summary}</p>
+              ) : null}
 
               <p className="mt-1 font-mono text-[11px] text-[var(--rg-text-muted)]">
                 {event.eventHash.slice(0, 10)}…{event.eventHash.slice(-8)}

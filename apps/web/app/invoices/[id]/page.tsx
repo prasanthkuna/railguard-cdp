@@ -11,9 +11,9 @@ import {
   SectionCard,
 } from "../../../components/design-system"
 import { AuditTimeline } from "../../../components/ui/AuditTimeline"
-import { EvidencePanelByPaymentIntent } from "../../../components/ui/EvidencePanel"
 import { Badge } from "../../../components/ui/Badge"
 import { Button } from "../../../components/ui/Button"
+import { EvidencePanelByPaymentIntent } from "../../../components/ui/EvidencePanel"
 import { Input, TextAreaField } from "../../../components/ui/Input"
 import { Modal, ModalActions } from "../../../components/ui/Modal"
 import { Skeleton } from "../../../components/ui/Skeleton"
@@ -53,7 +53,9 @@ export default function InvoiceDetailPage() {
   const { workspace } = useWorkspace()
 
   const [approvalModalOpen, setApprovalModalOpen] = React.useState(false)
-  const [approvalDecision, setApprovalDecision] = React.useState<"approved" | "rejected">("approved")
+  const [approvalDecision, setApprovalDecision] = React.useState<"approved" | "rejected">(
+    "approved",
+  )
   const [approvalReason, setApprovalReason] = React.useState("")
   const [paymentModalOpen, setPaymentModalOpen] = React.useState(false)
   const [paymentLoading, setPaymentLoading] = React.useState(false)
@@ -182,7 +184,12 @@ export default function InvoiceDetailPage() {
               </>
             ) : null}
             {(invoice.status === "ready" || invoice.status === "approved") && !activeIntent ? (
-              <Button size="sm" variant="accent" className="gap-2" onClick={() => setPaymentModalOpen(true)}>
+              <Button
+                size="sm"
+                variant="accent"
+                className="gap-2"
+                onClick={() => setPaymentModalOpen(true)}
+              >
                 <CreditCard className="h-4 w-4" />
                 Create Payment
               </Button>
@@ -204,18 +211,28 @@ export default function InvoiceDetailPage() {
       />
 
       {activeIntent ? (
-        <SectionCard title="Payment Lifecycle" description="Track execution from prepare to settlement." glow="accent">
+        <SectionCard
+          title="Payment Lifecycle"
+          description="Track execution from prepare to settlement."
+          glow="accent"
+        >
           <PaymentStepper status={paymentStatus} />
         </SectionCard>
       ) : null}
 
-      {activeIntent && ["executed", "confirmed", "submitted", "unknown", "reconciliation_required"].includes(activeIntent.status) ? (
+      {activeIntent &&
+      ["executed", "confirmed", "submitted", "unknown", "reconciliation_required"].includes(
+        activeIntent.status,
+      ) ? (
         <EvidencePanelByPaymentIntent paymentIntentId={activeIntent.id} />
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <SectionCard title="Extraction Details" description="AI-parsed invoice fields and confidence.">
+          <SectionCard
+            title="Extraction Details"
+            description="AI-parsed invoice fields and confidence."
+          >
             <DetailGrid
               items={[
                 { label: "Extracted Vendor", value: invoice.vendorNameRaw || "—" },
@@ -228,7 +245,11 @@ export default function InvoiceDetailPage() {
                   value: (
                     <span className="inline-flex flex-wrap items-center gap-2">
                       <span>{invoice.walletAddress || "—"}</span>
-                      {invoice.walletAddress ? <Badge variant="outline" status="info">{invoice.chain}</Badge> : null}
+                      {invoice.walletAddress ? (
+                        <Badge variant="outline" status="info">
+                          {invoice.chain}
+                        </Badge>
+                      ) : null}
                     </span>
                   ),
                   wide: true,
@@ -247,7 +268,10 @@ export default function InvoiceDetailPage() {
               {policyRun.triggeredRules?.length ? (
                 <ul className="space-y-2">
                   {policyRun.triggeredRules.map((rule) => (
-                    <li key={rule} className="flex items-start gap-2 text-sm text-[var(--rg-text-secondary)]">
+                    <li
+                      key={rule}
+                      className="flex items-start gap-2 text-sm text-[var(--rg-text-secondary)]"
+                    >
                       <X className="mt-0.5 h-4 w-4 shrink-0 text-[var(--rg-state-regret)]" />
                       {rule}
                     </li>
@@ -268,27 +292,83 @@ export default function InvoiceDetailPage() {
               description="Model threshold and chain changes before updating live workspace policy."
               action={
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => { setSimulationForm(simulationDefaults(workspace)); setSimulationRun(null) }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSimulationForm(simulationDefaults(workspace))
+                      setSimulationRun(null)
+                    }}
+                  >
                     Reset
                   </Button>
-                  <Button size="sm" variant="accent" onClick={handleSimulatePolicy} isLoading={simulationLoading}>
+                  <Button
+                    size="sm"
+                    variant="accent"
+                    onClick={handleSimulatePolicy}
+                    isLoading={simulationLoading}
+                  >
                     Run Simulation
                   </Button>
                 </div>
               }
             >
               <div className="grid gap-4 md:grid-cols-2">
-                <Input label="Approval Threshold (base units)" value={simulationForm.approvalThresholdBaseUnits} onChange={(e) => handleSimulationChange("approvalThresholdBaseUnits", e.target.value)} />
-                <Input label="Hard Cap (base units)" value={simulationForm.hardCapBaseUnits} onChange={(e) => handleSimulationChange("hardCapBaseUnits", e.target.value)} />
-                <Input label="Allowed Token" value={simulationForm.allowedToken} onChange={(e) => handleSimulationChange("allowedToken", e.target.value)} />
-                <Input label="Allowed Chain" value={simulationForm.allowedChain} onChange={(e) => handleSimulationChange("allowedChain", e.target.value)} />
-                <Input label="Amount Review Multiplier" type="number" min="1" step="0.1" value={simulationForm.amountReviewMultiplier} onChange={(e) => handleSimulationChange("amountReviewMultiplier", Number(e.target.value || workspace?.amountReviewMultiplier || 3))} />
-                <Input label="Wallet Risk Threshold" type="number" min="0" max="100" value={simulationForm.walletRiskThreshold} onChange={(e) => handleSimulationChange("walletRiskThreshold", Number(e.target.value || workspace?.walletRiskThreshold || 80))} />
+                <Input
+                  label="Approval Threshold (base units)"
+                  value={simulationForm.approvalThresholdBaseUnits}
+                  onChange={(e) =>
+                    handleSimulationChange("approvalThresholdBaseUnits", e.target.value)
+                  }
+                />
+                <Input
+                  label="Hard Cap (base units)"
+                  value={simulationForm.hardCapBaseUnits}
+                  onChange={(e) => handleSimulationChange("hardCapBaseUnits", e.target.value)}
+                />
+                <Input
+                  label="Allowed Token"
+                  value={simulationForm.allowedToken}
+                  onChange={(e) => handleSimulationChange("allowedToken", e.target.value)}
+                />
+                <Input
+                  label="Allowed Chain"
+                  value={simulationForm.allowedChain}
+                  onChange={(e) => handleSimulationChange("allowedChain", e.target.value)}
+                />
+                <Input
+                  label="Amount Review Multiplier"
+                  type="number"
+                  min="1"
+                  step="0.1"
+                  value={simulationForm.amountReviewMultiplier}
+                  onChange={(e) =>
+                    handleSimulationChange(
+                      "amountReviewMultiplier",
+                      Number(e.target.value || workspace?.amountReviewMultiplier || 3),
+                    )
+                  }
+                />
+                <Input
+                  label="Wallet Risk Threshold"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={simulationForm.walletRiskThreshold}
+                  onChange={(e) =>
+                    handleSimulationChange(
+                      "walletRiskThreshold",
+                      Number(e.target.value || workspace?.walletRiskThreshold || 80),
+                    )
+                  }
+                />
               </div>
               {simulationRun ? (
                 <div className="mt-6 rounded-[var(--rg-radius-lg)] border border-[var(--rg-border)] bg-[var(--rg-bg-panel)] p-4">
                   <div className="mb-3 flex items-center justify-between">
-                    <p className="text-sm font-medium text-[var(--rg-text-primary)]">Simulation Result</p>
+                    <p className="text-sm font-medium text-[var(--rg-text-primary)]">
+                      Simulation Result
+                    </p>
                     <Badge status={simulationRun.result} />
                   </div>
                   {simulationRun.triggeredRules.length ? (
@@ -312,28 +392,38 @@ export default function InvoiceDetailPage() {
           ) : null}
 
           {activeIntent ? (
-            <SectionCard title="Payment Intent" glow="accent" action={<Badge status={activeIntent.status} />}>
+            <SectionCard
+              title="Payment Intent"
+              glow="accent"
+              action={<Badge status={activeIntent.status} />}
+            >
               <DetailGrid
                 items={[
-                  { label: "Recipient", value: formatAddress(activeIntent.recipientAddress), mono: true },
+                  {
+                    label: "Recipient",
+                    value: formatAddress(activeIntent.recipientAddress),
+                    mono: true,
+                  },
                   { label: "Amount", value: formatUSDC(activeIntent.amountBaseUnits) },
                   ...(activeIntent.txHash
-                    ? [{
-                        label: "Transaction Hash",
-                        value: (
-                          <a
-                            href={`https://sepolia.basescan.org/tx/${activeIntent.txHash}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[var(--rg-accent)] hover:underline"
-                          >
-                            {activeIntent.txHash}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        ),
-                        wide: true,
-                        mono: true,
-                      }]
+                    ? [
+                        {
+                          label: "Transaction Hash",
+                          value: (
+                            <a
+                              href={`https://sepolia.basescan.org/tx/${activeIntent.txHash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[var(--rg-accent)] hover:underline"
+                            >
+                              {activeIntent.txHash}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ),
+                          wide: true,
+                          mono: true,
+                        },
+                      ]
                     : []),
                 ]}
               />
@@ -341,16 +431,24 @@ export default function InvoiceDetailPage() {
           ) : null}
         </div>
 
-        <SectionCard title="Audit Trail" description="Append-only record of decisions and execution.">
+        <SectionCard
+          title="Audit Trail"
+          description="Append-only record of decisions and execution."
+        >
           <div className="max-h-[560px] overflow-y-auto pr-1">
             <AuditTimeline events={auditEvents || []} />
           </div>
         </SectionCard>
       </div>
 
-      <Modal isOpen={approvalModalOpen} onClose={() => setApprovalModalOpen(false)} title={`Confirm ${approvalDecision}`}>
+      <Modal
+        isOpen={approvalModalOpen}
+        onClose={() => setApprovalModalOpen(false)}
+        title={`Confirm ${approvalDecision}`}
+      >
         <p className="text-sm text-[var(--rg-text-muted)]">
-          You are about to {approvalDecision === "approved" ? "approve" : "reject"} invoice {invoice.invoiceNumber}.
+          You are about to {approvalDecision === "approved" ? "approve" : "reject"} invoice{" "}
+          {invoice.invoiceNumber}.
         </p>
         <div className="mt-4">
           <TextAreaField
@@ -362,22 +460,48 @@ export default function InvoiceDetailPage() {
           />
         </div>
         <ModalActions>
-          <Button variant="ghost" onClick={() => setApprovalModalOpen(false)}>Cancel</Button>
-          <Button variant={approvalDecision === "approved" ? "accent" : "danger"} onClick={handleApproval}>
+          <Button variant="ghost" onClick={() => setApprovalModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant={approvalDecision === "approved" ? "accent" : "danger"}
+            onClick={handleApproval}
+          >
             Confirm {approvalDecision}
           </Button>
         </ModalActions>
       </Modal>
 
-      <Modal isOpen={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} title="Create Payment Intent">
+      <Modal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        title="Create Payment Intent"
+      >
         <p className="text-sm text-[var(--rg-text-muted)]">
-          Prepare a USDC transaction on {invoice.chain} for <strong className="text-[var(--rg-text-primary)]">{formatUSDC(invoice.amountBaseUnits)}</strong> to{" "}
-          <strong className="font-mono text-[var(--rg-text-primary)]">{formatAddress(invoice.walletAddress)}</strong> via Coinbase Developer Platform.
+          Prepare a USDC transaction on {invoice.chain} for{" "}
+          <strong className="text-[var(--rg-text-primary)]">
+            {formatUSDC(invoice.amountBaseUnits)}
+          </strong>{" "}
+          to{" "}
+          <strong className="font-mono text-[var(--rg-text-primary)]">
+            {formatAddress(invoice.walletAddress)}
+          </strong>{" "}
+          via Coinbase Developer Platform.
         </p>
-        <p className="mt-3 text-sm text-[var(--rg-text-muted)]">Funds will not transfer until execution.</p>
+        <p className="mt-3 text-sm text-[var(--rg-text-muted)]">
+          Funds will not transfer until execution.
+        </p>
         <ModalActions>
-          <Button variant="ghost" onClick={() => setPaymentModalOpen(false)} disabled={paymentLoading}>Cancel</Button>
-          <Button variant="accent" onClick={handleCreatePaymentIntent} isLoading={paymentLoading}>Create Intent</Button>
+          <Button
+            variant="ghost"
+            onClick={() => setPaymentModalOpen(false)}
+            disabled={paymentLoading}
+          >
+            Cancel
+          </Button>
+          <Button variant="accent" onClick={handleCreatePaymentIntent} isLoading={paymentLoading}>
+            Create Intent
+          </Button>
         </ModalActions>
       </Modal>
     </div>

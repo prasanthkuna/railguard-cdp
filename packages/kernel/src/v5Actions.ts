@@ -76,7 +76,10 @@ export async function executeIntent(
 export async function verifyExecution(
   executionId: string,
   rail: ExecutionRail,
-  buildEvidence: (executionId: string, observation: Awaited<ReturnType<ExecutionRail["observe"]>>) => EvidenceEnvelope,
+  buildEvidence: (
+    executionId: string,
+    observation: Awaited<ReturnType<ExecutionRail["observe"]>>,
+  ) => EvidenceEnvelope,
   submission: Parameters<ExecutionRail["observe"]>[0],
 ): Promise<VerifyResult> {
   const observation = await rail.observe(submission)
@@ -102,7 +105,10 @@ export async function pay(
   intent: FinancialIntent,
   evaluate: (intent: FinancialIntent) => Promise<AuthorizationGrant>,
   rail: ExecutionRail,
-  buildEvidence: (executionId: string, observation: Awaited<ReturnType<ExecutionRail["observe"]>>) => EvidenceEnvelope,
+  buildEvidence: (
+    executionId: string,
+    observation: Awaited<ReturnType<ExecutionRail["observe"]>>,
+  ) => EvidenceEnvelope,
 ): Promise<{ authorize: AuthorizeResult; execute: ExecuteResult; verify?: VerifyResult }> {
   const authorize = await authorizeIntent(intent, evaluate)
   if (authorize.status !== "AUTHORIZED") {
@@ -110,18 +116,13 @@ export async function pay(
   }
   const execute = await executeIntent(intent, authorize.grant, rail)
   if (execute.status === "SUBMITTED" && execute.submission) {
-    const verify = await verifyExecution(
-      execute.executionId,
-      rail,
-      buildEvidence,
-      {
-        executionId: execute.executionId,
-        rail: rail.name,
-        txHash: execute.submission.txHash,
-        providerOperationId: execute.submission.providerOperationId,
-        result: "BROADCAST_CONFIRMED",
-      },
-    )
+    const verify = await verifyExecution(execute.executionId, rail, buildEvidence, {
+      executionId: execute.executionId,
+      rail: rail.name,
+      txHash: execute.submission.txHash,
+      providerOperationId: execute.submission.providerOperationId,
+      result: "BROADCAST_CONFIRMED",
+    })
     return { authorize, execute, verify }
   }
   return { authorize, execute }

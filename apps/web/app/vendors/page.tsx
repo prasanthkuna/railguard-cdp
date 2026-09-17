@@ -52,7 +52,11 @@ export default function VendorsPage() {
             <EmptyState
               title="No vendors found"
               description="Create your approved vendor registry before releasing payments."
-              action={<Button variant="accent" onClick={() => router.push("/vendors/new")}>Add Counterparty</Button>}
+              action={
+                <Button variant="accent" onClick={() => router.push("/vendors/new")}>
+                  Add Counterparty
+                </Button>
+              }
             />
           </div>
         ) : (
@@ -67,8 +71,14 @@ export default function VendorsPage() {
             </TableHeader>
             <TableBody>
               {vendors.map((vendor) => (
-                <TableRow key={vendor.id} className="cursor-pointer" onClick={() => router.push(`/vendors/${vendor.id}`)}>
-                  <TableCell className="font-medium text-[var(--rg-text-primary)]">{vendor.name}</TableCell>
+                <TableRow
+                  key={vendor.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/vendors/${vendor.id}`)}
+                >
+                  <TableCell className="font-medium text-[var(--rg-text-primary)]">
+                    {vendor.name}
+                  </TableCell>
                   <TableCell>
                     <Badge status={vendor.status} variant="dot" />
                   </TableCell>
@@ -85,7 +95,9 @@ export default function VendorsPage() {
                       {vendor.riskScore}/100
                     </span>
                   </TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">{formatDate(vendor.createdAt)}</TableCell>
+                  <TableCell className="text-[var(--rg-text-muted)]">
+                    {formatDate(vendor.createdAt)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

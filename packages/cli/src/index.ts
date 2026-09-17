@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { resolveRailguardEnv } from "./config"
 import { runDoctor, runLab, runVerify } from "./commands/ops"
 import {
   runAuthorize,
@@ -10,6 +9,7 @@ import {
   runMetrics,
   runPay,
 } from "./commands/v5"
+import { resolveRailguardEnv } from "./config"
 
 const HELP = `Railguard CLI v0.5 — agent treasury control plane
 

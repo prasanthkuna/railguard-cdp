@@ -1,8 +1,8 @@
 import type { AuthorizationGrant } from "../../packages/kernel/src/authority"
 import type { EvidenceEnvelope } from "../../packages/kernel/src/evidence"
 import {
-  mapLegacyPaymentStatus,
   type V5ExecutionStatus,
+  mapLegacyPaymentStatus,
 } from "../../packages/kernel/src/executionRail"
 import type { CreateFinancialIntentInput } from "../../packages/kernel/src/intent"
 import {
@@ -55,7 +55,10 @@ export async function ensureFinancialIntentForPayment(input: {
     "prepared",
   )
 
-  const linked = await getFinancialIntentByPaymentIntent(input.organizationId, input.paymentIntentId)
+  const linked = await getFinancialIntentByPaymentIntent(
+    input.organizationId,
+    input.paymentIntentId,
+  )
   return {
     financialIntentId: stored.intent.id,
     executionId: linked?.executionId ?? `exec_${stored.intent.id}`,
@@ -69,7 +72,10 @@ export async function syncFinancialIntentFromPaymentStatus(input: {
   paymentStatus: string
   txHash?: string
 }): Promise<void> {
-  const linked = await getFinancialIntentByPaymentIntent(input.organizationId, input.paymentIntentId)
+  const linked = await getFinancialIntentByPaymentIntent(
+    input.organizationId,
+    input.paymentIntentId,
+  )
   if (!linked?.executionId) return
 
   const status = mapLegacyPaymentStatus(input.paymentStatus)

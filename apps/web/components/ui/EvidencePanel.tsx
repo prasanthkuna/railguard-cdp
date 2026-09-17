@@ -1,15 +1,17 @@
 "use client"
 
 import * as React from "react"
-import { SectionCard } from "../design-system"
-import { Skeleton } from "./Skeleton"
 import { cn } from "../../lib/cn"
 import type { V5EvidenceExplain, V5EvidenceResponse } from "../../lib/types"
+import { SectionCard } from "../design-system"
+import { Skeleton } from "./Skeleton"
 
 function Row({ label, value, valid }: { label: string; value: string; valid?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-[var(--rg-border)] py-2 last:border-0">
-      <span className="text-xs font-medium uppercase tracking-wide text-[var(--rg-text-muted)]">{label}</span>
+      <span className="text-xs font-medium uppercase tracking-wide text-[var(--rg-text-muted)]">
+        {label}
+      </span>
       <span
         className={cn(
           "text-right text-sm font-medium text-[var(--rg-text-primary)]",
@@ -64,7 +66,11 @@ export function EvidencePanel({
         <Row label="Decision" value={explain.decision.toUpperCase()} />
         {explain.rail ? <Row label="Rail" value={explain.rail} /> : null}
         <Row label="Settlement" value={explain.settlement} />
-        <Row label="Evidence" value={explain.evidenceValid ? "VALID" : "INVALID"} valid={explain.evidenceValid} />
+        <Row
+          label="Evidence"
+          value={explain.evidenceValid ? "VALID" : "INVALID"}
+          valid={explain.evidenceValid}
+        />
       </div>
       <details className="mt-3">
         <summary className="cursor-pointer text-xs font-medium text-[var(--rg-brand)] hover:underline">

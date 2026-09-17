@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs"
+import type { CreateFinancialIntentInput } from "@railguard/sdk"
 import { createClient } from "../client"
 import type { RailguardEnv } from "../config"
 import { requireToken } from "../config"
-import type { CreateFinancialIntentInput } from "@railguard/sdk"
 
 export async function runEvidence(env: RailguardEnv, executionId: string): Promise<void> {
   const client = createClient(env)
@@ -44,7 +44,11 @@ export async function runIntentCreate(env: RailguardEnv, inputPath?: string): Pr
   console.log(JSON.stringify(result, null, 2))
 }
 
-export async function runPay(env: RailguardEnv, inputPath?: string, paymentIntentId?: string): Promise<void> {
+export async function runPay(
+  env: RailguardEnv,
+  inputPath?: string,
+  paymentIntentId?: string,
+): Promise<void> {
   const client = createClient(env)
   const raw = inputPath ? readFileSync(inputPath, "utf8") : await Bun.stdin.text()
   const input = JSON.parse(raw) as CreateFinancialIntentInput

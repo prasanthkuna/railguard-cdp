@@ -29,11 +29,11 @@ export function PageHeader({
   className?: string
 }) {
   return (
-    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}>
+    <div
+      className={cn("flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between", className)}
+    >
       <div className="space-y-2">
-        {eyebrow ? (
-          <p className="rg-caption text-[var(--rg-brand)]">{eyebrow}</p>
-        ) : null}
+        {eyebrow ? <p className="rg-caption text-[var(--rg-brand)]">{eyebrow}</p> : null}
         <h1 className="rg-title-1 tracking-tight text-[var(--rg-text-primary)] md:text-cds-display-3 md:leading-[var(--lineHeight-display3)] md:font-normal">
           {title}
         </h1>
@@ -134,7 +134,12 @@ export function HeroMetric({
   }
 
   return (
-    <div className={cn("relative overflow-hidden rounded-[var(--rg-radius-xl)] p-6 md:p-8", colors[accent])}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[var(--rg-radius-xl)] p-6 md:p-8",
+        colors[accent],
+      )}
+    >
       <p className="rg-caption text-[var(--rg-brand)]">{label}</p>
       <p className="rg-display-3 mt-3 tracking-tight text-[var(--rg-text-primary)]">{value}</p>
       {sub ? <p className="rg-body mt-3 max-w-md text-[var(--rg-text-muted)]">{sub}</p> : null}
@@ -208,7 +213,15 @@ const PAYMENT_STEPS = [
 ] as const
 
 export function PaymentStepper({ status }: { status: string }) {
-  const order = ["prepared", "executing", "submitted", "unknown", "reconciliation_required", "confirmed", "executed"]
+  const order = [
+    "prepared",
+    "executing",
+    "submitted",
+    "unknown",
+    "reconciliation_required",
+    "confirmed",
+    "executed",
+  ]
   const idx = Math.max(0, order.indexOf(status))
   const activeIdx =
     status === "executed" || status === "confirmed"
@@ -231,7 +244,9 @@ export function PaymentStepper({ status }: { status: string }) {
                 "rg-caption flex h-8 min-w-8 items-center justify-center rounded-full transition",
                 done && "bg-[var(--rg-state-joy)] text-white",
                 active && "bg-[var(--rg-brand)] text-white ring-4 ring-[var(--rg-accent-glow)]",
-                !done && !active && "border border-[var(--rg-border)] bg-[var(--rg-bg-base)] text-[var(--rg-text-muted)]",
+                !done &&
+                  !active &&
+                  "border border-[var(--rg-border)] bg-[var(--rg-bg-base)] text-[var(--rg-text-muted)]",
               )}
             >
               {stepIdx + 1}
@@ -245,7 +260,12 @@ export function PaymentStepper({ status }: { status: string }) {
               {step.label}
             </span>
             {stepIdx < PAYMENT_STEPS.length - 1 ? (
-              <div className={cn("mx-1 h-px w-6", done ? "bg-[var(--rg-state-joy)]" : "bg-[var(--rg-border)]")} />
+              <div
+                className={cn(
+                  "mx-1 h-px w-6",
+                  done ? "bg-[var(--rg-state-joy)]" : "bg-[var(--rg-border)]",
+                )}
+              />
             ) : null}
           </div>
         )
@@ -282,7 +302,9 @@ export function SectionCard({
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="rg-title-3 text-[var(--rg-text-primary)]">{title}</h2>
-          {description ? <p className="rg-body mt-1 text-[var(--rg-text-muted)]">{description}</p> : null}
+          {description ? (
+            <p className="rg-body mt-1 text-[var(--rg-text-muted)]">{description}</p>
+          ) : null}
         </div>
         {action}
       </div>

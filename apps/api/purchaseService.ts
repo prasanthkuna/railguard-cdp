@@ -33,7 +33,10 @@ export async function createPurchase(input: {
     aggregateType: "purchase",
     aggregateId: id,
     eventType: "purchase.created",
-    payload: { organizationId: input.organizationId, businessIdempotencyKey: input.businessIdempotencyKey },
+    payload: {
+      organizationId: input.organizationId,
+      businessIdempotencyKey: input.businessIdempotencyKey,
+    },
   })
 
   const row = await db.queryRow<{

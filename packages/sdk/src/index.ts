@@ -37,14 +37,20 @@ export class RailguardClient {
   }
 
   /** v5 public verb — authorize */
-  async authorize(intentId: string): Promise<{ grant: AuthorizationGrant; status: V5ExecutionStatus }> {
+  async authorize(
+    intentId: string,
+  ): Promise<{ grant: AuthorizationGrant; status: V5ExecutionStatus }> {
     return this.request(`/v1/intents/${intentId}/authorize`, { method: "POST", body: "{}" })
   }
 
   /** v5 public verb — execute (requires linked payment intent for CDP path) */
   async execute(
     intentId: string,
-    options?: { paymentIntentId?: string; idempotencyKey?: string; acknowledgeLiveExecution?: boolean },
+    options?: {
+      paymentIntentId?: string
+      idempotencyKey?: string
+      acknowledgeLiveExecution?: boolean
+    },
   ): Promise<{ executionId: string; status: V5ExecutionStatus }> {
     return this.request(`/v1/intents/${intentId}/execute`, {
       method: "POST",

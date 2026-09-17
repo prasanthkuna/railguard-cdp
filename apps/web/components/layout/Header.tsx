@@ -66,7 +66,13 @@ export function Header() {
         </Link>
 
         {!devAuthEnabled ? (
-          <Button type="button" size="sm" variant="ghost" className="gap-1.5" onClick={handleSignOut}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="gap-1.5"
+            onClick={handleSignOut}
+          >
             <LogOut className="h-4 w-4" />
             <span className="hidden sm:inline">Sign Out</span>
           </Button>

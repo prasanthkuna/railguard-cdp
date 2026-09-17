@@ -1,5 +1,5 @@
-import type { GuardSqlExecutor } from "../../vendor/x402-guard/packages/policy/src/index"
 import type { SQLDatabase } from "encore.dev/storage/sqldb"
+import type { GuardSqlExecutor } from "../../vendor/x402-guard/packages/policy/src/index"
 
 type SqlTx = Awaited<ReturnType<SQLDatabase["begin"]>>
 

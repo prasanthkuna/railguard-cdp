@@ -92,13 +92,13 @@ function accessTokenExpiresSoon(token: string, skewSeconds = 60): boolean {
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit, allowRefresh = true): Promise<T> {
-  if (
-    allowRefresh &&
-    !isDevAuthEnabled() &&
-    !path.startsWith("/auth/workos/")
-  ) {
+  if (allowRefresh && !isDevAuthEnabled() && !path.startsWith("/auth/workos/")) {
     const session = getAuthSession()
-    if (session?.accessToken && session.refreshToken && accessTokenExpiresSoon(session.accessToken)) {
+    if (
+      session?.accessToken &&
+      session.refreshToken &&
+      accessTokenExpiresSoon(session.accessToken)
+    ) {
       await refreshAuthSession()
     }
   }
@@ -280,16 +280,21 @@ export const api = {
       body: JSON.stringify(body),
     }),
   authorizeFinancialIntent: (intentId: string) =>
-    apiFetch<{ grant: Record<string, unknown>; status: string }>(`/v1/intents/${intentId}/authorize`, {
-      method: "POST",
-      body: "{}",
-    }),
+    apiFetch<{ grant: Record<string, unknown>; status: string }>(
+      `/v1/intents/${intentId}/authorize`,
+      {
+        method: "POST",
+        body: "{}",
+      },
+    ),
   getExecution: (executionId: string) =>
     apiFetch<import("./types").V5ExecutionResponse>(`/v1/executions/${executionId}`),
   getExecutionEvidence: (executionId: string) =>
     apiFetch<import("./types").V5EvidenceResponse>(`/v1/executions/${executionId}/evidence`),
   getPaymentIntentEvidence: (paymentIntentId: string) =>
-    apiFetch<import("./types").V5EvidenceResponse>(`/v1/payment-intents/${paymentIntentId}/evidence`),
+    apiFetch<import("./types").V5EvidenceResponse>(
+      `/v1/payment-intents/${paymentIntentId}/evidence`,
+    ),
   getFinancialMetrics: () =>
     apiFetch<{ fundsAtRisk: string; unknownExecutionCount: number; budgetUtilization: number }>(
       "/v1/metrics/financial",

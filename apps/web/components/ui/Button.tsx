@@ -9,7 +9,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
+  (
+    { className, variant = "primary", size = "md", isLoading, children, disabled, ...props },
+    ref,
+  ) => {
     const variants = {
       primary:
         "bg-[var(--rg-brand)] text-white hover:bg-[var(--rg-accent-hover)] shadow-[var(--rg-shadow-glow)]",
@@ -17,7 +20,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         "bg-[var(--rg-brand)] text-white hover:bg-[var(--rg-accent-hover)] shadow-[var(--rg-shadow-glow)]",
       secondary:
         "border border-[var(--rg-border)] bg-[var(--rg-bg-base)] text-[var(--rg-text-primary)] hover:bg-[var(--rg-bg-hover)]",
-      ghost: "text-[var(--rg-text-secondary)] hover:bg-[var(--rg-bg-hover)] hover:text-[var(--rg-text-primary)]",
+      ghost:
+        "text-[var(--rg-text-secondary)] hover:bg-[var(--rg-bg-hover)] hover:text-[var(--rg-text-primary)]",
       danger:
         "border border-[rgba(207,32,47,0.25)] bg-[var(--rg-bg-negative-wash)] text-[var(--rg-state-regret)] hover:bg-[rgba(207,32,47,0.08)]",
     }

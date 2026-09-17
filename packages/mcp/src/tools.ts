@@ -1,6 +1,6 @@
 import { RailguardClient } from "@railguard/sdk"
 import type { CreateFinancialIntentInput } from "@railguard/sdk"
-import { resolveRailguardEnv, requireToken } from "./config"
+import { requireToken, resolveRailguardEnv } from "./config"
 
 let cached: RailguardClient | null = null
 
@@ -27,10 +27,7 @@ export async function toolAuthorize(intentId: string): Promise<unknown> {
   return getClient().authorize(intentId)
 }
 
-export async function toolExecute(
-  intentId: string,
-  paymentIntentId?: string,
-): Promise<unknown> {
+export async function toolExecute(intentId: string, paymentIntentId?: string): Promise<unknown> {
   return getClient().execute(intentId, paymentIntentId ? { paymentIntentId } : undefined)
 }
 

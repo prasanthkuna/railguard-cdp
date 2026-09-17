@@ -1,5 +1,9 @@
 /** v5 §12 — AP2 mandates normalize to FinancialIntent */
-import { createFinancialIntent, type CreateFinancialIntentInput, type FinancialIntent } from "../../intent"
+import {
+  type CreateFinancialIntentInput,
+  type FinancialIntent,
+  createFinancialIntent,
+} from "../../intent"
 
 export interface Ap2Mandate {
   mandateId: string

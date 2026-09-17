@@ -46,10 +46,29 @@ export default function SetupPage() {
         </CardHeader>
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
-          <Input label="Workspace Name" placeholder="Example: Apex Treasury Ops" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
-          <Input label="Owner Email (optional)" type="email" placeholder="finance-ops@company.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            label="Workspace Name"
+            placeholder="Example: Apex Treasury Ops"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoFocus
+          />
+          <Input
+            label="Owner Email (optional)"
+            type="email"
+            placeholder="finance-ops@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
           {error ? <p className="text-sm text-[var(--rg-state-regret)]">{error}</p> : null}
-          <Button type="submit" variant="primary" className="w-full" isLoading={loading} disabled={!name.trim()}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full"
+            isLoading={loading}
+            disabled={!name.trim()}
+          >
             Initialize Workspace
           </Button>
         </form>

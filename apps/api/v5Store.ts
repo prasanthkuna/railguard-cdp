@@ -2,27 +2,27 @@ import { randomUUID } from "node:crypto"
 import { APIError } from "encore.dev/api"
 import { getAuthData } from "encore.dev/internal/codegen/auth"
 import { type AppRole, type AuthenticatedActor, hasRequiredRole } from "../../packages/auth/src"
+import type { AuthorizationGrant } from "../../packages/kernel/src/authority"
 import {
+  type EvidenceEnvelope,
   buildEvidenceEnvelope,
   explainCharge,
-  type EvidenceEnvelope,
   hashEvidencePart,
 } from "../../packages/kernel/src/evidence"
 import {
-  createFinancialIntent,
+  type V5ExecutionStatus,
+  mapLegacyPaymentStatus,
+} from "../../packages/kernel/src/executionRail"
+import {
   type CreateFinancialIntentInput,
   type FinancialIntent,
+  createFinancialIntent,
 } from "../../packages/kernel/src/intent"
-import type { AuthorizationGrant } from "../../packages/kernel/src/authority"
-import {
-  mapLegacyPaymentStatus,
-  type V5ExecutionStatus,
-} from "../../packages/kernel/src/executionRail"
 import { authorizeIntent } from "../../packages/kernel/src/v5Actions"
-import { evaluatePaymentGuard, isX402GuardEnabled, organizationAgentId } from "./x402Guard"
-import { buildGuardInput, buildExecutionCorrelation } from "./paymentCorrelation"
-import { resolveCdpPayerAddress } from "./providers"
 import { db } from "./db"
+import { buildExecutionCorrelation, buildGuardInput } from "./paymentCorrelation"
+import { resolveCdpPayerAddress } from "./providers"
+import { evaluatePaymentGuard, isX402GuardEnabled, organizationAgentId } from "./x402Guard"
 
 interface FinancialIntentRow {
   id: string
@@ -50,7 +50,9 @@ function ensureIdempotencyKey(value: string): string {
   return normalized
 }
 
-export async function requireV5Actor(allowedRoles?: readonly AppRole[]): Promise<AuthenticatedActor> {
+export async function requireV5Actor(
+  allowedRoles?: readonly AppRole[],
+): Promise<AuthenticatedActor> {
   const actor = getAuthData() as AuthenticatedActor | null
   if (!actor) throw APIError.unauthenticated("authentication required")
   if (!hasRequiredRole(actor, allowedRoles)) {

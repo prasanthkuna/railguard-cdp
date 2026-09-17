@@ -15,7 +15,9 @@ export interface Reconciler {
   determine(observations: ExecutionObservation[]): SettlementResult["decision"]
 }
 
-export function determineSettlement(observations: ExecutionObservation[]): SettlementResult["decision"] {
+export function determineSettlement(
+  observations: ExecutionObservation[],
+): SettlementResult["decision"] {
   if (observations.length === 0) return "UNKNOWN"
   const reverted = observations.some((o) => o.settlementStatus === "REVERTED")
   if (reverted) return "REVERSED"

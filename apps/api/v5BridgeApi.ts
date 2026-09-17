@@ -1,11 +1,11 @@
 import { APIError, api } from "encore.dev/api"
+import { getFinancialIntentByPaymentIntent } from "./v5Bridge"
 import {
   buildAndStoreEvidence,
   buildExplainCharge,
   getStoredExecution,
   requireV5Actor,
 } from "./v5Store"
-import { getFinancialIntentByPaymentIntent } from "./v5Bridge"
 
 /** Resolve v5 execution from legacy payment intent id */
 export const getV1ExecutionByPaymentIntent = api(

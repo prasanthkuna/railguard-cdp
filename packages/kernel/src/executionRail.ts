@@ -27,10 +27,7 @@ export const V5_TERMINAL_STATUSES: readonly V5ExecutionStatus[] = [
   "FAILED_SAFE",
 ] as const
 
-export const V5_AMBIGUOUS_STATUSES: readonly V5ExecutionStatus[] = [
-  "UNKNOWN",
-  "DISPUTED",
-] as const
+export const V5_AMBIGUOUS_STATUSES: readonly V5ExecutionStatus[] = ["UNKNOWN", "DISPUTED"] as const
 
 export interface PreparedExecution {
   executionId: string

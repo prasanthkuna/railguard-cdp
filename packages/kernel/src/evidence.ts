@@ -68,15 +68,18 @@ export interface ExplainThisCharge {
   evidenceValid: boolean
 }
 
-export function explainCharge(envelope: EvidenceEnvelope, meta: {
-  agent: string
-  task?: string
-  requested: string
-  budget?: string
-  merchant?: string
-  decision: string
-  rail?: string
-}): ExplainThisCharge {
+export function explainCharge(
+  envelope: EvidenceEnvelope,
+  meta: {
+    agent: string
+    task?: string
+    requested: string
+    budget?: string
+    merchant?: string
+    decision: string
+    rail?: string
+  },
+): ExplainThisCharge {
   const settled = ["FINALIZED", "SAFE", "INCLUDED"].includes(envelope.settlement.status)
   return {
     agent: meta.agent,

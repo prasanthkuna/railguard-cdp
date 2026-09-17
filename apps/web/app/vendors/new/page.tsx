@@ -34,15 +34,35 @@ export default function CreateVendorPage() {
     <div className="mx-auto max-w-2xl space-y-6">
       <BackLink label="Back" onClick={() => router.back()} />
 
-      <PageHeader eyebrow="Counterparties" title="Add Vendor" description="Register a new approved payout counterparty." />
+      <PageHeader
+        eyebrow="Counterparties"
+        title="Add Vendor"
+        description="Register a new approved payout counterparty."
+      />
 
       <form onSubmit={handleSubmit}>
         <SectionCard title="Vendor Information">
-          <Input label="Legal Name" placeholder="Acme Corp" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+          <Input
+            label="Legal Name"
+            placeholder="Acme Corp"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            autoFocus
+          />
           {error ? <p className="mt-4 text-sm text-[var(--rg-state-regret)]">{error}</p> : null}
           <div className="mt-6 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>Cancel</Button>
-            <Button type="submit" variant="accent" disabled={!name.trim() || loading} isLoading={loading}>Create Vendor</Button>
+            <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="accent"
+              disabled={!name.trim() || loading}
+              isLoading={loading}
+            >
+              Create Vendor
+            </Button>
           </div>
         </SectionCard>
       </form>

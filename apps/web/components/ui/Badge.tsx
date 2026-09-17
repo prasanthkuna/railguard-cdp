@@ -7,7 +7,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "solid" | "outline" | "dot"
 }
 
-const badgeType = "inline-flex items-center rounded-[var(--rg-radius-pill)] px-2.5 py-0.5 rg-caption normal-case"
+const badgeType =
+  "inline-flex items-center rounded-[var(--rg-radius-pill)] px-2.5 py-0.5 rg-caption normal-case"
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, status, variant = "solid", ...props }, ref) => {

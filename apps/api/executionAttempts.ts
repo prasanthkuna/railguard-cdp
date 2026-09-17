@@ -1,4 +1,4 @@
-import { type CanonicalCdpTransferRequest } from "../../packages/cdp/src/cdpRequest"
+import type { CanonicalCdpTransferRequest } from "../../packages/cdp/src/cdpRequest"
 import {
   type ExecutionAttemptRecord,
   type ExecutionAttemptStatus,
@@ -94,7 +94,10 @@ export async function persistExecutionAttempt(
     )
     ON CONFLICT (execution_id) DO NOTHING
   `
-  const stored = await findExecutionAttemptByExecutionId(attempt.organizationId, attempt.executionId)
+  const stored = await findExecutionAttemptByExecutionId(
+    attempt.organizationId,
+    attempt.executionId,
+  )
   if (!stored) {
     throw new Error("failed to persist execution attempt")
   }
@@ -140,7 +143,9 @@ export async function updateExecutionAttemptAfterBroadcast(input: {
   `
 }
 
-export function createDbExecutionAttemptStore(): import("./executionAttemptStore").ExecutionAttemptStore {
+export function createDbExecutionAttemptStore(): import(
+  "./executionAttemptStore",
+).ExecutionAttemptStore {
   return {
     getOrCreate: getOrCreateExecutionAttempt,
     updateAfterBroadcast: updateExecutionAttemptAfterBroadcast,

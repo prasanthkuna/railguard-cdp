@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test"
 import { submitPersistedCdpTransferCore } from "./cdpRecoveryScenario"
+import type { CdpTransferExecutor } from "./cdpRecoveryScenario"
 import { getCdpTransferHook, setCdpTransferHookForTests } from "./cdpTransferHook"
 import { InMemoryExecutionAttemptStore } from "./executionAttemptStore"
-import type { CdpTransferExecutor } from "./cdpRecoveryScenario"
 
 const executeViaHook: CdpTransferExecutor = async (input) => {
   const hook = getCdpTransferHook()

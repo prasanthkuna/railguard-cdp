@@ -1,11 +1,11 @@
 import { BASE_SEPOLIA_CHAIN_ID, BASE_SEPOLIA_USDC } from "../../cdp/src"
+import { guardStatusAfterBroadcast, guardStatusAfterReserve } from "./lifecycle"
 import {
   buildPaymentIdentifier,
   buildPaymentResourceUrl,
   transitionAfterExecutionFailure,
   transitionAfterSettlementVerification,
 } from "./reconciliation"
-import { guardStatusAfterBroadcast, guardStatusAfterReserve } from "./lifecycle"
 
 export interface ExecutionCorrelation {
   paymentIdentifier: string

@@ -42,7 +42,10 @@ export function verifyCanonicalCdpRequest(
   storedHash: string,
   candidate: CanonicalCdpTransferRequest,
 ): boolean {
-  return storedHash === hashCanonicalCdpRequest(candidate) && stableStringify(stored) === stableStringify(candidate)
+  return (
+    storedHash === hashCanonicalCdpRequest(candidate) &&
+    stableStringify(stored) === stableStringify(candidate)
+  )
 }
 
 function safeIdentifier(value: string): string {

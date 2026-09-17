@@ -68,7 +68,11 @@ export default function InvoicesPage() {
             <EmptyState
               title="No invoices found"
               description="Import invoice documents or create records to start the payable review queue."
-              action={<Button variant="accent" onClick={() => router.push("/invoices/upload")}>Import Invoice</Button>}
+              action={
+                <Button variant="accent" onClick={() => router.push("/invoices/upload")}>
+                  Import Invoice
+                </Button>
+              }
             />
           </div>
         ) : (
@@ -92,11 +96,15 @@ export default function InvoicesPage() {
                   <TableCell className="font-medium text-[var(--rg-text-primary)]">
                     {inv.vendorNameRaw || "Unknown"}
                   </TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">{inv.invoiceNumber || "N/A"}</TableCell>
+                  <TableCell className="text-[var(--rg-text-muted)]">
+                    {inv.invoiceNumber || "N/A"}
+                  </TableCell>
                   <TableCell className="font-medium text-[var(--rg-text-primary)]">
                     {formatUSDC(inv.amountBaseUnits)}
                   </TableCell>
-                  <TableCell className="text-[var(--rg-text-muted)]">{formatDate(inv.createdAt)}</TableCell>
+                  <TableCell className="text-[var(--rg-text-muted)]">
+                    {formatDate(inv.createdAt)}
+                  </TableCell>
                   <TableCell>
                     <Badge status={inv.status} variant="dot" />
                   </TableCell>

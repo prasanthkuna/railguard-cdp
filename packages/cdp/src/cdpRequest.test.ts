@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import {
-  buildCanonicalCdpTransferRequest,
-  hashCanonicalCdpRequest,
-} from "./cdpRequest"
+import { buildCanonicalCdpTransferRequest, hashCanonicalCdpRequest } from "./cdpRequest"
 
 describe("canonical cdp request", () => {
   it("hashes deterministically", () => {

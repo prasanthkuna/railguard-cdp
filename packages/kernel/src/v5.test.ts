@@ -1,14 +1,18 @@
 import { describe, expect, test } from "bun:test"
-import { createCdpExecutionRail } from "./adapters/cdpRail"
-import { createX402ExecutionRail } from "./adapters/x402Rail"
 import { createBaseExecutionRail } from "./adapters/baseRail"
+import { createCdpExecutionRail } from "./adapters/cdpRail"
 import { mandateToFinancialIntent } from "./adapters/mandates/ap2"
+import { createX402ExecutionRail } from "./adapters/x402Rail"
 import { canReserveWithinLimits } from "./budget"
 import { buildEvidenceEnvelope, explainCharge } from "./evidence"
+import {
+  handleAmbiguousExecution,
+  mapLegacyPaymentStatus,
+  requiresReconciliation,
+} from "./executionRail"
 import { createFinancialIntent, isAuthoritySubset } from "./intent"
-import { authorizeIntent, executeIntent } from "./v5Actions"
-import { handleAmbiguousExecution, mapLegacyPaymentStatus, requiresReconciliation } from "./executionRail"
 import { determineSettlement } from "./reconciler"
+import { authorizeIntent, executeIntent } from "./v5Actions"
 
 describe("v5 kernel", () => {
   test("FinancialIntent is rail-agnostic", () => {
@@ -18,7 +22,10 @@ describe("v5 kernel", () => {
         action: { type: "pay", purpose: "vendor invoice" },
         counterparty: { address: "0xabc" },
         value: { amount: "1000000", asset: "USDC" },
-        constraints: { expiresAt: new Date(Date.now() + 3600_000).toISOString(), network: "base-sepolia" },
+        constraints: {
+          expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+          network: "base-sepolia",
+        },
         idempotencyKey: "idem_1",
       },
       "intent_1",
@@ -48,9 +55,7 @@ describe("v5 kernel", () => {
   })
 
   test("budget reservation respects limits", () => {
-    expect(
-      canReserveWithinLimits("100", { perTransaction: "50" }, {}),
-    ).toBe(false)
+    expect(canReserveWithinLimits("100", { perTransaction: "50" }, {})).toBe(false)
   })
 
   test("reconciler determines settlement", () => {

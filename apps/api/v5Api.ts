@@ -1,8 +1,8 @@
 import { APIError, api } from "encore.dev/api"
-import type { CreateFinancialIntentInput } from "../../packages/kernel/src/intent"
 import type { AuthorizationGrant } from "../../packages/kernel/src/authority"
 import type { EvidenceEnvelope } from "../../packages/kernel/src/evidence"
 import type { V5ExecutionStatus } from "../../packages/kernel/src/executionRail"
+import type { CreateFinancialIntentInput } from "../../packages/kernel/src/intent"
 import {
   authorizeStoredIntent,
   buildAndStoreEvidence,
@@ -148,7 +148,8 @@ export const getV1ExecutionEvidence = api(
   async (params: { id: string }): Promise<V5EvidenceResponse> => {
     const actor = await requireV5Actor(["owner", "finance", "approver"])
     const stored = await getStoredExecution(actor.organizationID, params.id)
-    const evidence = stored.evidence ?? (await buildAndStoreEvidence(actor.organizationID, params.id))
+    const evidence =
+      stored.evidence ?? (await buildAndStoreEvidence(actor.organizationID, params.id))
     const explain = buildExplainCharge({ ...stored, evidence })
     return { executionId: params.id, evidence, explain }
   },
@@ -200,7 +201,9 @@ async function getStoredExecutionByIntent(organizationId: string, intentId: stri
   }
 }
 
-async function countUnknownExecutions(organizationId: string): Promise<{ count: number; amount: string }> {
+async function countUnknownExecutions(
+  organizationId: string,
+): Promise<{ count: number; amount: string }> {
   const { db } = await import("./db")
   const row = await db.queryRow<{ count: number; amount: string | null }>`
     SELECT COUNT(*)::int AS count,

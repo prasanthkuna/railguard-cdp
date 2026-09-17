@@ -101,7 +101,12 @@ export default function VendorDetailPage() {
           <SectionCard
             title="Registered Wallets"
             action={
-              <Button size="sm" variant="secondary" className="gap-2" onClick={() => setWalletModalOpen(true)}>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="gap-2"
+                onClick={() => setWalletModalOpen(true)}
+              >
                 <Plus className="h-4 w-4" /> Add Wallet
               </Button>
             }
@@ -125,12 +130,16 @@ export default function VendorDetailPage() {
                     <TableRow key={wallet.id}>
                       <TableCell className="font-mono text-xs">{wallet.address}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" status="info">{wallet.chain}</Badge>
+                        <Badge variant="outline" status="info">
+                          {wallet.chain}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge status={wallet.status} />
                       </TableCell>
-                      <TableCell className="text-[var(--rg-text-muted)]">{formatDate(wallet.firstSeenAt)}</TableCell>
+                      <TableCell className="text-[var(--rg-text-muted)]">
+                        {formatDate(wallet.firstSeenAt)}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -149,7 +158,10 @@ export default function VendorDetailPage() {
           <SectionCard title="Risk Profile" glow={vendor.riskScore > 70 ? "caution" : "accent"}>
             <DetailGrid
               items={[
-                { label: "Risk Score", value: <span className={riskTone}>{vendor.riskScore}/100</span> },
+                {
+                  label: "Risk Score",
+                  value: <span className={riskTone}>{vendor.riskScore}/100</span>,
+                },
                 { label: "Added", value: formatDate(vendor.createdAt) },
               ]}
             />
@@ -166,7 +178,11 @@ export default function VendorDetailPage() {
                     ) : (
                       <Circle className="h-5 w-5 shrink-0 text-[var(--rg-text-muted)]" />
                     )}
-                    <span className={isComplete ? "text-[var(--rg-text-primary)]" : "text-[var(--rg-text-muted)]"}>
+                    <span
+                      className={
+                        isComplete ? "text-[var(--rg-text-primary)]" : "text-[var(--rg-text-muted)]"
+                      }
+                    >
                       {item}
                     </span>
                   </li>
@@ -177,18 +193,48 @@ export default function VendorDetailPage() {
         </div>
       </div>
 
-      <Modal isOpen={walletModalOpen} onClose={() => setWalletModalOpen(false)} title="Add Vendor Wallet">
+      <Modal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+        title="Add Vendor Wallet"
+      >
         <form onSubmit={handleAddWallet} className="space-y-4">
-          <SelectField label="Chain" value={walletChain} onChange={(e) => setWalletChain(e.target.value)}>
+          <SelectField
+            label="Chain"
+            value={walletChain}
+            onChange={(e) => setWalletChain(e.target.value)}
+          >
             <option value="base-sepolia">Base Sepolia</option>
             <option value="ethereum">Ethereum</option>
             <option value="polygon">Polygon</option>
           </SelectField>
-          <Input label="Wallet Address" placeholder="0x..." value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} required />
-          {walletError ? <p className="text-sm text-[var(--rg-state-regret)]">{walletError}</p> : null}
+          <Input
+            label="Wallet Address"
+            placeholder="0x..."
+            value={walletAddress}
+            onChange={(e) => setWalletAddress(e.target.value)}
+            required
+          />
+          {walletError ? (
+            <p className="text-sm text-[var(--rg-state-regret)]">{walletError}</p>
+          ) : null}
           <ModalActions>
-            <Button type="button" variant="ghost" onClick={() => setWalletModalOpen(false)} disabled={addingWallet}>Cancel</Button>
-            <Button type="submit" variant="accent" disabled={!walletAddress.trim() || addingWallet} isLoading={addingWallet}>Add Wallet</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setWalletModalOpen(false)}
+              disabled={addingWallet}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="accent"
+              disabled={!walletAddress.trim() || addingWallet}
+              isLoading={addingWallet}
+            >
+              Add Wallet
+            </Button>
           </ModalActions>
         </form>
       </Modal>

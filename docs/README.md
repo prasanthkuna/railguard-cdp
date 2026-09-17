@@ -12,5 +12,5 @@
 | [runbooks/demo-verification.md](./runbooks/demo-verification.md) | End-to-end verify |
 | [runbooks/local-setup.md](./runbooks/local-setup.md) | Dev environment |
 
-**v5 plans:** [railguard-new/docs/v5plan.md](https://github.com/prasanthkuna/railguard-new/blob/master/docs/v5plan.md)  
-**Workspace map:** [railguard-new/docs/WORKSPACE.md](https://github.com/prasanthkuna/railguard-new/blob/master/docs/WORKSPACE.md)
+**v5 plans:** [railguard-protocol/docs/v5plan.md](https://github.com/prasanthkuna/railguard-protocol/blob/master/docs/v5plan.md)  
+**Workspace map:** [railguard-protocol/docs/WORKSPACE.md](https://github.com/prasanthkuna/railguard-protocol/blob/master/docs/WORKSPACE.md)

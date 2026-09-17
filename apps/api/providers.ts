@@ -15,9 +15,9 @@ import {
   verifyDemoSettlement,
   verifyTransferFacts,
 } from "../../packages/settlement/src"
-import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
 import { getCdpTransferHook } from "./cdpTransferHook"
-import { type CdpExecutionResult } from "./providers.types"
+import { type PaymentExecutionMode, resolvePaymentMode } from "./config"
+import type { CdpExecutionResult } from "./providers.types"
 import { resolveCdpConfirmationDepth } from "./runtimeConfig"
 
 const BASE_SEPOLIA_CHAIN_ID = 84532
@@ -356,7 +356,7 @@ export async function getWorkOSAuthorizationURL(input: {
   // GoogleOAuth is an environment social connection. Passing organizationId makes WorkOS
   // look for an SSO Connection on that org and fails with organization_invalid.
   const organizationId =
-    provider === "GoogleOAuth" ? undefined : input.organizationID ?? defaultWorkOSOrganizationID()
+    provider === "GoogleOAuth" ? undefined : (input.organizationID ?? defaultWorkOSOrganizationID())
 
   return workos.userManagement.getAuthorizationUrlWithPKCE({
     provider,
@@ -378,7 +378,9 @@ export async function ensureWorkOSOrganizationMembership(input: {
     userId: input.userID,
     organizationId: input.organizationID,
   })
-  const existing = memberships.data.find((membership) => membership.organizationId === input.organizationID)
+  const existing = memberships.data.find(
+    (membership) => membership.organizationId === input.organizationID,
+  )
   if (existing?.status === "active") return
   if (existing?.status === "inactive") {
     await workos.userManagement.reactivateOrganizationMembership(existing.id)
@@ -393,7 +395,11 @@ export async function ensureWorkOSOrganizationMembership(input: {
     })
   } catch (error) {
     const message = workosErrorMessage(error, "").toLowerCase()
-    if (!message.includes("already") && !message.includes("conflict") && !message.includes("exists")) {
+    if (
+      !message.includes("already") &&
+      !message.includes("conflict") &&
+      !message.includes("exists")
+    ) {
       throw error
     }
   }

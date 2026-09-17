@@ -6,6 +6,7 @@ import { db } from "./db"
 import { transitionAfterSettlementVerification } from "./paymentReconciliation"
 import { isReconcileCandidate } from "./paymentState"
 import { verifySettlement } from "./providers"
+import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 import {
   commitPaymentGuardAuthorization,
   isX402GuardEnabled,
@@ -13,7 +14,6 @@ import {
   recordPaymentSettlement,
   releasePaymentGuardAuthorization,
 } from "./x402Guard"
-import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 
 export interface PaymentIntentReconcileRow {
   id: string

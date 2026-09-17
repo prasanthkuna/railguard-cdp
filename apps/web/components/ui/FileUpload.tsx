@@ -65,7 +65,8 @@ export function FileUpload({
           <UploadCloud className="h-8 w-8 text-[var(--rg-brand)]" />
         </div>
         <p className="mb-1 text-sm text-[var(--rg-text-secondary)]">
-          <span className="font-semibold text-[var(--rg-brand)]">Click to upload</span> or drag and drop
+          <span className="font-semibold text-[var(--rg-brand)]">Click to upload</span> or drag and
+          drop
         </p>
         <p className="text-xs text-[var(--rg-text-muted)]">PDF, PNG, JPG — max 10MB</p>
       </div>

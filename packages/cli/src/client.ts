@@ -5,8 +5,7 @@ export function createClient(env: RailguardEnv, auth = true): RailguardClient {
   const token = auth ? requireToken(env) : env.accessToken
   return new RailguardClient({
     baseUrl: env.baseUrl,
-    getAuthHeaders: () =>
-      token ? { authorization: `Bearer ${token}` } : {},
+    getAuthHeaders: () => (token ? { authorization: `Bearer ${token}` } : {}),
   })
 }
 

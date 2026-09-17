@@ -30,7 +30,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           {...props}
         />
-        {hint && !error ? <span className="rg-legal text-[var(--rg-text-muted)]">{hint}</span> : null}
+        {hint && !error ? (
+          <span className="rg-legal text-[var(--rg-text-muted)]">{hint}</span>
+        ) : null}
         {error ? <span className="rg-legal text-[var(--rg-state-regret)]">{error}</span> : null}
       </div>
     )

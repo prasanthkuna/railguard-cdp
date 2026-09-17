@@ -27,7 +27,9 @@ import type {
   VendorWalletRecord as VendorWallet,
 } from "../../packages/db/src"
 import { type PolicyResult, evaluateInvoicePolicy } from "../../packages/policy/src"
+import { submitPersistedCdpTransfer } from "./cdpExecutionSubmit"
 import { db } from "./db"
+import { assertExecutionAllowed } from "./executionSafety"
 import {
   type AuditExportRequestedMessage,
   type ExtractionRequestedMessage,
@@ -55,9 +57,6 @@ import {
 } from "./paymentExecution"
 import { transitionAfterSettlementVerification } from "./paymentReconciliation"
 import { isExecutionRetryBlocked, isIdempotentExecutionReturn } from "./paymentState"
-import { submitPersistedCdpTransfer } from "./cdpExecutionSubmit"
-import { addQuote, createPurchase } from "./purchaseService"
-import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
 import { buildPolicySnapshotInput, computePolicySnapshotHash } from "./policySnapshot"
 import {
   authenticateWorkOSPassword,
@@ -79,8 +78,9 @@ import {
   verifyWorkOSWebhook,
   workosErrorMessage,
 } from "./providers"
+import { completePurchaseFulfilmentForPaymentIntent } from "./purchaseFulfilment"
+import { addQuote, createPurchase } from "./purchaseService"
 import { evaluatePaymentGuard, isX402GuardEnabled } from "./x402Guard"
-import { assertExecutionAllowed } from "./executionSafety"
 
 interface PolicyRun {
   id: string
@@ -973,7 +973,10 @@ export const executePaymentIntent = api(
         current.execution_id
       ) {
         claimed = current
-      } else if (current?.status === "executing" && current.execution_idempotency_key === idempotencyKey) {
+      } else if (
+        current?.status === "executing" &&
+        current.execution_idempotency_key === idempotencyKey
+      ) {
         return { paymentIntent: mapPaymentIntent(current) }
       } else {
         throw APIError.failedPrecondition(

@@ -14,9 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isClient = useIsClient()
   const devAuthEnabled = isDevAuthEnabled()
   const isPublicRoute =
-    pathname === "/login" ||
-    pathname === "/setup" ||
-    pathname?.startsWith("/auth/callback")
+    pathname === "/login" || pathname === "/setup" || pathname?.startsWith("/auth/callback")
   const [isAuthenticated, setIsAuthenticated] = React.useState(
     () => devAuthEnabled || (typeof window !== "undefined" && hasAuthSession()),
   )
@@ -48,8 +46,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--rg-bg-primary-wash)]">
             <ShieldCheck className="h-7 w-7 text-[var(--rg-brand)] rg-pulse-ring" />
           </div>
-          <h2 className="rg-title-1 tracking-tight text-[var(--rg-text-primary)]">Checking access</h2>
-          <p className="rg-body mt-3 text-[var(--rg-text-muted)]">Preparing your PreBroadcast workspace.</p>
+          <h2 className="rg-title-1 tracking-tight text-[var(--rg-text-primary)]">
+            Checking access
+          </h2>
+          <p className="rg-body mt-3 text-[var(--rg-text-muted)]">
+            Preparing your PreBroadcast workspace.
+          </p>
         </div>
       </div>
     )

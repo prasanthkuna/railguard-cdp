@@ -85,8 +85,7 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) => {
         ORDER BY created_at ASC
         LIMIT 1
       `
-      const role =
-        localUser?.role && isAppRole(localUser.role) ? localUser.role : verified.role
+      const role = localUser?.role && isAppRole(localUser.role) ? localUser.role : verified.role
 
       return {
         userID: verified.userID,

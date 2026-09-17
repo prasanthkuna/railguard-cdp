@@ -26,14 +26,16 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 )
 Card.displayName = "Card"
 
-export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
+export function CardHeader({
+  children,
+  className,
+}: { children: React.ReactNode; className?: string }) {
   return <div className={cn("mb-4 flex flex-col gap-1", className)}>{children}</div>
 }
 
-export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <h3 className={cn("rg-headline text-[var(--rg-text-primary)]", className)}>
-      {children}
-    </h3>
-  )
+export function CardTitle({
+  children,
+  className,
+}: { children: React.ReactNode; className?: string }) {
+  return <h3 className={cn("rg-headline text-[var(--rg-text-primary)]", className)}>{children}</h3>
 }

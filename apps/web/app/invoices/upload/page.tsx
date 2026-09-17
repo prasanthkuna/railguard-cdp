@@ -85,32 +85,64 @@ export default function UploadInvoicePage() {
           {file ? (
             <div className="mt-4 flex items-center justify-between rounded-[var(--rg-radius-md)] border border-[var(--rg-border)] bg-[var(--rg-bg-panel)] px-4 py-3 text-sm">
               <span className="font-medium text-[var(--rg-text-primary)]">{file.name}</span>
-              <span className="text-[var(--rg-text-muted)]">{(file.size / 1024).toFixed(1)} KB</span>
+              <span className="text-[var(--rg-text-muted)]">
+                {(file.size / 1024).toFixed(1)} KB
+              </span>
             </div>
           ) : null}
         </SectionCard>
 
-        <SectionCard title="Extraction Hints" description="Optional hints to improve AI extraction accuracy.">
+        <SectionCard
+          title="Extraction Hints"
+          description="Optional hints to improve AI extraction accuracy."
+        >
           <div className="space-y-4">
-            <SelectField label="Vendor" value={vendorID} onChange={(e) => setVendorID(e.target.value)}>
+            <SelectField
+              label="Vendor"
+              value={vendorID}
+              onChange={(e) => setVendorID(e.target.value)}
+            >
               <option value="">Auto-detect vendor...</option>
               {vendors.map((v) => (
-                <option key={v.id} value={v.id}>{v.name}</option>
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
               ))}
             </SelectField>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Invoice Number" placeholder="e.g. INV-2026" value={hints.invoiceNumber} onChange={(e) => setHints({ ...hints, invoiceNumber: e.target.value })} />
-              <Input label="Amount (Base Units)" placeholder="e.g. 1000000000" value={hints.amountBaseUnits} onChange={(e) => setHints({ ...hints, amountBaseUnits: e.target.value })} />
+              <Input
+                label="Invoice Number"
+                placeholder="e.g. INV-2026"
+                value={hints.invoiceNumber}
+                onChange={(e) => setHints({ ...hints, invoiceNumber: e.target.value })}
+              />
+              <Input
+                label="Amount (Base Units)"
+                placeholder="e.g. 1000000000"
+                value={hints.amountBaseUnits}
+                onChange={(e) => setHints({ ...hints, amountBaseUnits: e.target.value })}
+              />
             </div>
-            <Input label="Wallet Address" placeholder="0x..." value={hints.walletAddress} onChange={(e) => setHints({ ...hints, walletAddress: e.target.value })} />
+            <Input
+              label="Wallet Address"
+              placeholder="0x..."
+              value={hints.walletAddress}
+              onChange={(e) => setHints({ ...hints, walletAddress: e.target.value })}
+            />
           </div>
         </SectionCard>
 
-        {error ? <p className="text-sm font-medium text-[var(--rg-state-regret)]">{error}</p> : null}
+        {error ? (
+          <p className="text-sm font-medium text-[var(--rg-state-regret)]">{error}</p>
+        ) : null}
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>Cancel</Button>
-          <Button type="submit" variant="accent" disabled={!file || loading} isLoading={loading}>Upload & Extract</Button>
+          <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="accent" disabled={!file || loading} isLoading={loading}>
+            Upload & Extract
+          </Button>
         </div>
       </form>
     </div>

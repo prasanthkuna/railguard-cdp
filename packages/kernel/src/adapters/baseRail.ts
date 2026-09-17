@@ -1,5 +1,5 @@
 /** Base ExecutionRail — alias of CDP path on Base Sepolia (v5 §5) */
-import { createCdpExecutionRail, type CdpRailConfig } from "./cdpRail"
+import { type CdpRailConfig, createCdpExecutionRail } from "./cdpRail"
 
 export function createBaseExecutionRail(config: CdpRailConfig) {
   const rail = createCdpExecutionRail(config)

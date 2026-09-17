@@ -1,9 +1,9 @@
 import {
+  type SettlementVerificationStatus,
   guardStatusAfterCommit,
   guardStatusAfterRelease,
   mapSettlementVerificationToLifecycle,
   shouldReleaseGuardOnExecutionFailure,
-  type SettlementVerificationStatus,
 } from "./lifecycle"
 
 export interface PaymentCorrelationFacts {
@@ -66,7 +66,8 @@ export function transitionAfterSettlementVerification(
       return {
         paymentStatus: "confirmed",
         settlementStatus: mapped.settlementStatus,
-        guardStatus: guardAuthorizationId && !alreadyCommitted ? guardStatusAfterCommit() : undefined,
+        guardStatus:
+          guardAuthorizationId && !alreadyCommitted ? guardStatusAfterCommit() : undefined,
         shouldCommitGuard: Boolean(guardAuthorizationId && !alreadyCommitted),
         shouldReleaseGuard: false,
         shouldRecordSettlement: true,

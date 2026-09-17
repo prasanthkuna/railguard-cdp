@@ -71,9 +71,7 @@ export function guardStatusAfterReserve(): GuardLifecycleStatus {
   return "reserved"
 }
 
-export function mapSettlementVerificationToLifecycle(
-  status: SettlementVerificationStatus,
-): {
+export function mapSettlementVerificationToLifecycle(status: SettlementVerificationStatus): {
   paymentStatus?: "confirmed" | "reverted" | "reconciliation_required"
   settlementStatus?: SettlementLifecycleStatus
 } {

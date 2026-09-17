@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test"
-import { setCdpTransferHookForTests } from "./cdpTransferHook"
 import {
   classifyBroadcastResult,
   executionAttemptStatusAfterBroadcast,
   prepareExecutionAttempt,
 } from "./cdpExecutionDriver"
+import { setCdpTransferHookForTests } from "./cdpTransferHook"
 
 describe("cdp provider recovery hook", () => {
   it("classifies a dropped provider response as UNKNOWN before broadcast confirmation", () => {

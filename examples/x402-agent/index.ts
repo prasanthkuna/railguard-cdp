@@ -7,7 +7,10 @@ const body = {
   action: { type: "purchase", purpose: "competitor research" },
   counterparty: { domain: "api.example.com" },
   value: { amount: "3200000", asset: "USDC" },
-  constraints: { expiresAt: new Date(Date.now() + 3600_000).toISOString(), network: "base-sepolia" },
+  constraints: {
+    expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+    network: "base-sepolia",
+  },
   context: { task: "competitor research", resource: "https://api.example.com/v1/report" },
   idempotencyKey: `x402_${Date.now()}`,
 }

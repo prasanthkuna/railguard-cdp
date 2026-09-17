@@ -1,4 +1,4 @@
-import { type CdpExecutionResult } from "./providers.types"
+import type { CdpExecutionResult } from "./providers.types"
 
 export type CdpTransferHook = (input: {
   organizationID: string
