@@ -16,12 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout x402-guard into vendor
-        uses: actions/checkout@v4
-        with:
-          repository: prasanthkuna/x402-guard
-          path: vendor/x402-guard
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -34,9 +28,9 @@ jobs:
 
       - name: Build vendored x402-guard packages
         run: |
-          cd vendor/x402-guard
-          npm ci
-          npm run build
+          for pkg in core policy receipts middleware; do
+            (cd "vendor/x402-guard/packages/$pkg" && npm install && npm run build)
+          done
 
       - name: Install Encore CLI
         run: |
@@ -44,7 +38,7 @@ jobs:
           echo "$HOME/.encore/bin" >> "$GITHUB_PATH"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: Lint
         run: bun run lint
