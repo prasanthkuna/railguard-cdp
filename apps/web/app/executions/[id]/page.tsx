@@ -2,12 +2,12 @@
 
 import { useParams, useRouter } from "next/navigation"
 import * as React from "react"
-import { BackLink, PageHeader } from "../../components/design-system"
-import { EvidencePanel } from "../../components/ui/EvidencePanel"
-import { Skeleton } from "../../components/ui/Skeleton"
-import { api } from "../../lib/api"
-import { getErrorMessage } from "../../lib/errors"
-import type { V5EvidenceResponse, V5ExecutionResponse } from "../../lib/types"
+import { BackLink, PageHeader } from "../../../components/design-system"
+import { EvidencePanel } from "../../../components/ui/EvidencePanel"
+import { Skeleton } from "../../../components/ui/Skeleton"
+import { api } from "../../../lib/api"
+import { getErrorMessage } from "../../../lib/errors"
+import type { V5EvidenceResponse, V5ExecutionResponse } from "../../../lib/types"
 
 export default function ExecutionDetailPage() {
   const params = useParams()
