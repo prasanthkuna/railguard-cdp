@@ -26,12 +26,6 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Build vendored x402-guard packages
-        run: |
-          for pkg in core policy receipts middleware; do
-            (cd "vendor/x402-guard/packages/$pkg" && npm install && npm run build)
-          done
-
       - name: Install Encore CLI
         run: |
           curl -L https://encore.dev/install.sh | bash

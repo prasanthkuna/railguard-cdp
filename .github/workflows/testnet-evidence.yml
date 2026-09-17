@@ -16,11 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Build vendored x402-guard
-        run: |
-          for pkg in core policy receipts middleware; do
-            (cd "vendor/x402-guard/packages/$pkg" && npm install && npm run build)
-          done
       - run: bun install
       - name: Base Sepolia settlement evidence
         run: bun run testnet-evidence
