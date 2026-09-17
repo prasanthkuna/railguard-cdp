@@ -16,11 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Checkout x402-guard
+      - name: Checkout x402-guard into vendor
         uses: actions/checkout@v4
         with:
           repository: prasanthkuna/x402-guard
-          path: x402-guard
+          path: vendor/x402-guard
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -32,9 +32,9 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Build x402-guard packages
+      - name: Build vendored x402-guard packages
         run: |
-          cd x402-guard
+          cd vendor/x402-guard
           npm ci
           npm run build
 
