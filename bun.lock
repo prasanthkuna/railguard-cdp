@@ -95,6 +95,7 @@
         "railguard": "./src/index.ts",
       },
       "dependencies": {
+        "@railguard/integrations": "workspace:*",
         "@railguard/sdk": "workspace:*",
       },
     },
@@ -114,6 +115,14 @@
       "version": "0.5.0",
       "dependencies": {
         "@railguard/kernel": "workspace:*",
+      },
+    },
+    "packages/integrations": {
+      "name": "@railguard/integrations",
+      "version": "0.1.0",
+      "dependencies": {
+        "@railguard/kernel": "workspace:*",
+        "@railguard/settlement": "workspace:*",
       },
     },
     "packages/kernel": {
@@ -471,6 +480,8 @@
     "@railguard/evidence": ["@railguard/evidence@workspace:packages/evidence"],
 
     "@railguard/execution": ["@railguard/execution@workspace:packages/execution"],
+
+    "@railguard/integrations": ["@railguard/integrations@workspace:packages/integrations"],
 
     "@railguard/kernel": ["@railguard/kernel@workspace:packages/kernel"],
 

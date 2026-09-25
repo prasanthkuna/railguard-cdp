@@ -1,0 +1,21 @@
+{
+  "name": "@railguard/integrations",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./assurance": "./src/assuranceMode.ts",
+    "./format": "./src/format.ts",
+    "./risk": "./src/risk/index.ts",
+    "./wallets": "./src/wallets/index.ts",
+    "./agents": "./src/agents/index.ts",
+    "./rails": "./src/rails/index.ts",
+    "./signer": "./src/signer/index.ts",
+    "./viem": "./src/viem/guardedClient.ts"
+  },
+  "dependencies": {
+    "@railguard/kernel": "workspace:*",
+    "@railguard/settlement": "workspace:*"
+  }
+}

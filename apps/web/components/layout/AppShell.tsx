@@ -14,7 +14,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isClient = useIsClient()
   const devAuthEnabled = isDevAuthEnabled()
   const isPublicRoute =
-    pathname === "/login" || pathname === "/setup" || pathname?.startsWith("/auth/callback")
+    pathname === "/login" ||
+    pathname === "/setup" ||
+    pathname === "/zebpay" ||
+    pathname?.startsWith("/auth/callback")
   const [isAuthenticated, setIsAuthenticated] = React.useState(
     () => devAuthEnabled || (typeof window !== "undefined" && hasAuthSession()),
   )

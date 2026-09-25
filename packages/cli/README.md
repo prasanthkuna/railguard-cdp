@@ -16,6 +16,7 @@ $env:RAILGUARD_ACCESS_TOKEN = "<token>"
 $env:RAILGUARD_BASE_URL = "http://localhost:4000"
 
 bun run railguard doctor
+bun run railguard verify <executionId>
 bun run railguard verify
 bun run railguard lab run --suite cdp-section22
 bun run railguard metrics

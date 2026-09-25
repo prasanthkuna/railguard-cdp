@@ -1,5 +1,6 @@
 import type { AuthorizationGrant } from "../authority"
-/** Grant-phase rails — interface conformance only (v5 §19: not enabled in production) */
+/** Grant-phase rails — interface conformance only (v5 §19: not enabled in production).
+ *  EVM settlement verification for Arbitrum Sepolia lives in `@railguard/settlement` (see `evidence/arbitrum-sepolia`). */
 import type {
   ExecutionObservation,
   ExecutionRail,

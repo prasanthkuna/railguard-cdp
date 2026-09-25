@@ -127,6 +127,36 @@ export const executeV1Intent = api(
   },
 )
 
+/** v5 §10 — GET /v1/intents/:id */
+export const getV1Intent = api(
+  { expose: true, auth: true, method: "GET", path: "/v1/intents/:id" },
+  async (params: { id: string }): Promise<V5IntentResponse> => {
+    const actor = await requireV5Actor(["owner", "finance", "approver"])
+    const stored = await getStoredExecutionByIntent(actor.organizationID, params.id)
+    return {
+      intent: stored.intent as CreateFinancialIntentInput & { id: string },
+      status: stored.status,
+      paymentIntentId: stored.paymentIntentId,
+      executionId: stored.executionId,
+      createdAt: stored.createdAt,
+    }
+  },
+)
+
+/** Plan §2 — verify by financial intent id */
+export const getV1IntentVerify = api(
+  { expose: true, auth: true, method: "GET", path: "/v1/intents/:id/verify" },
+  async (params: { id: string }): Promise<V5EvidenceResponse & { intentId: string }> => {
+    const actor = await requireV5Actor(["owner", "finance", "approver"])
+    const stored = await getStoredExecutionByIntent(actor.organizationID, params.id)
+    const executionId = stored.executionId ?? `exec_${params.id}`
+    const full = await getStoredExecution(actor.organizationID, executionId)
+    const evidence = full.evidence ?? (await buildAndStoreEvidence(actor.organizationID, executionId))
+    const explain = buildExplainCharge({ ...full, evidence })
+    return { intentId: params.id, executionId, evidence, explain }
+  },
+)
+
 /** v5 §10 — GET /v1/executions/:id */
 export const getV1Execution = api(
   { expose: true, auth: true, method: "GET", path: "/v1/executions/:id" },

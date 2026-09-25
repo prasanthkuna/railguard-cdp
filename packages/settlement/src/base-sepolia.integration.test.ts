@@ -21,7 +21,7 @@ function requireFound(
 describe.skipIf(!RUN_LIVE)("Base Sepolia integration (live RPC)", () => {
   it("discovers a recent USDC transfer on chain", async () => {
     const found = requireFound(
-      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 2000 }),
+      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 1000 }),
     )
     expect(found.txHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     expect(found.transfer.tokenAddress.toLowerCase()).toBe(BASE_SEPOLIA_USDC.toLowerCase())
@@ -29,7 +29,7 @@ describe.skipIf(!RUN_LIVE)("Base Sepolia integration (live RPC)", () => {
 
   it("verifies transfer facts against a live receipt", async () => {
     const found = requireFound(
-      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 2000 }),
+      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 1000 }),
     )
     const expected = buildExpectedFromTransfer(found.transfer)
     const result = await fetchSettlementFromTx({
@@ -43,7 +43,7 @@ describe.skipIf(!RUN_LIVE)("Base Sepolia integration (live RPC)", () => {
 
   it("APF-004 wrong recipient triggers reconciliation on live receipt", async () => {
     const found = requireFound(
-      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 2000 }),
+      await discoverRecentUsdcTransfer({ lookbackBlocks: 20_000, maxBlockRange: 1000 }),
     )
     const expected = buildExpectedFromTransfer(found.transfer)
     const wrong = {

@@ -80,3 +80,4 @@ scripts/finalize-*.ts
 scripts/generate-campaign-assets.ts
 scripts/render-*.ps1
 scripts/save-shot.ts
+/encore.gen

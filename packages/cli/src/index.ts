@@ -1,5 +1,7 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
+import { runInject, runRaceBudget, runVerifyApf } from "./commands/failure"
+import { runProtect } from "./commands/protect"
 import { runDoctor, runLab, runVerify } from "./commands/ops"
 import {
   runAuthorize,
@@ -15,7 +17,10 @@ const HELP = `Railguard CLI v0.5 — agent treasury control plane
 
 Usage:
   railguard doctor [--base-url URL]
-  railguard verify [--base-url URL]
+  railguard verify [executionId|intentId] [--base-url URL]
+  railguard protect [--base-url URL]
+  railguard inject <scenario> [--depth N]
+  railguard race budget [--requests N]
   railguard lab [apf-lab args...]
   railguard metrics [--base-url URL]
   railguard evidence <executionId> [--base-url URL]
@@ -60,10 +65,19 @@ async function main(): Promise<number> {
   try {
     switch (cmd) {
       case "doctor":
-        runDoctor(env)
+        await runDoctor(env)
         return 0
+      case "protect":
+        return runProtect(env)
+      case "inject":
+        if (!sub) throw new Error("usage: railguard inject <rpc-timeout|duplicate-retry|reorg|signer-timeout>")
+        return runInject(sub, positionals.slice(2))
+      case "race":
+        if (sub !== "budget") throw new Error("usage: railguard race budget [--requests N]")
+        return runRaceBudget(Number(positionals[2] ?? 100))
       case "verify":
-        return runVerify(env)
+        if (sub?.toUpperCase().startsWith("APF-")) return runVerifyApf(sub, env)
+        return runVerify(env, sub)
       case "lab":
         return runLab(positionals.slice(1))
       case "metrics":

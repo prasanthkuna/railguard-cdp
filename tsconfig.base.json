@@ -28,6 +28,7 @@
       "@railguard/execution": ["packages/execution/src"],
       "@railguard/reconciliation": ["packages/reconciliation/src"],
       "@railguard/observability": ["packages/observability/src"],
+      "@railguard/integrations": ["packages/integrations/src"],
       "@x402-guard/core": ["../x402-guard/packages/core/src"],
       "@x402-guard/policy": ["../x402-guard/packages/policy/src"],
       "@x402-guard/middleware": ["../x402-guard/packages/middleware/src"],

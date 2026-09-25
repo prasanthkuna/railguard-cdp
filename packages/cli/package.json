@@ -8,6 +8,7 @@
     "railguard": "./src/index.ts"
   },
   "dependencies": {
+    "@railguard/integrations": "workspace:*",
     "@railguard/sdk": "workspace:*"
   },
   "scripts": {

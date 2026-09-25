@@ -8,7 +8,7 @@
 
 Operator UI ships as **PreBroadcast** on Vercel. Backend: Encore API + CDP on Base Sepolia.
 
-> **Live demo:** [prebroadcast.vercel.app](https://prebroadcast.vercel.app) · API: `https://staging-railguard-s4ii.encr.app`  
+> **Live demo:** [prebroadcast.vercel.app](https://prebroadcast.vercel.app) · **ZebPay pack:** [/zebpay](https://prebroadcast.vercel.app/zebpay) · API: `https://staging-railguard-s4ii.encr.app`  
 > **Constitution:** [v5plan.md](https://github.com/prasanthkuna/railguard-protocol/blob/master/docs/v5plan.md) · **Status:** [v5execution.md](https://github.com/prasanthkuna/railguard-protocol/blob/master/docs/v5execution.md)
 
 ## Stack (v5)
@@ -70,6 +70,7 @@ bun run verify:demo   # requires dev:api running
 | Doc | Purpose |
 |-----|---------|
 | [INTEGRATION.md](./docs/INTEGRATION.md) | CLI, MCP, SDK |
+| [PLAN25SEP_CODE.md](./docs/PLAN25SEP_CODE.md) | plan25sep.md code map (no video) |
 | [MONOREPO.md](./docs/MONOREPO.md) | Repo layout |
 | [OSS_CLOUD.md](./docs/OSS_CLOUD.md) | Open source vs Cloud |
 | [INVARIANTS.md](./docs/INVARIANTS.md) | INV-001..008 |

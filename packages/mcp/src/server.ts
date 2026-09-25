@@ -21,6 +21,15 @@ const TOOLS = [
     inputSchema: { type: "object", properties: {} },
   },
   {
+    name: "railguard_intent",
+    description: "Alias: create a v5 FinancialIntent (POST /v1/intents)",
+    inputSchema: {
+      type: "object",
+      required: ["intent"],
+      properties: { intent: { type: "object" } },
+    },
+  },
+  {
     name: "railguard_create_intent",
     description: "Create a v5 FinancialIntent (POST /v1/intents)",
     inputSchema: {
@@ -72,6 +81,33 @@ const TOOLS = [
     },
   },
   {
+    name: "railguard_simulate",
+    description: "Alias: authorize without execute (policy dry-run)",
+    inputSchema: {
+      type: "object",
+      required: ["intentId"],
+      properties: { intentId: { type: "string" } },
+    },
+  },
+  {
+    name: "railguard_status",
+    description: "Alias: get execution status",
+    inputSchema: {
+      type: "object",
+      required: ["executionId"],
+      properties: { executionId: { type: "string" } },
+    },
+  },
+  {
+    name: "railguard_receipt",
+    description: "Alias: verify execution evidence envelope",
+    inputSchema: {
+      type: "object",
+      required: ["executionId"],
+      properties: { executionId: { type: "string" } },
+    },
+  },
+  {
     name: "railguard_get_execution",
     description: "Get execution status",
     inputSchema: {
@@ -91,16 +127,21 @@ async function dispatchTool(name: string, args: Record<string, unknown>): Promis
   switch (name) {
     case "railguard_doctor":
       return toolDoctor()
+    case "railguard_intent":
     case "railguard_create_intent":
       return toolCreateIntent(args.intent as never)
+    case "railguard_simulate":
+      return toolAuthorize(String(args.intentId))
     case "railguard_authorize":
       return toolAuthorize(String(args.intentId))
     case "railguard_execute":
       return toolExecute(String(args.intentId), args.paymentIntentId as string | undefined)
     case "railguard_verify":
+    case "railguard_receipt":
       return toolVerify(String(args.executionId))
     case "railguard_pay":
       return toolPay(args.intent as never, args.paymentIntentId as string | undefined)
+    case "railguard_status":
     case "railguard_get_execution":
       return toolGetExecution(String(args.executionId))
     case "railguard_financial_metrics":

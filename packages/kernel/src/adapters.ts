@@ -6,7 +6,19 @@ export type SupportedRailName = "x402" | "cdp" | "base"
 
 export const V5_SUPPORTED_RAILS: readonly SupportedRailName[] = ["x402", "cdp", "base"] as const
 
-export const V5_DEFERRED_RAILS = ["arc", "solana", "stellar", "stripe", "mandates/ap2"] as const
+/** Settlement-verify + grant rails — see @railguard/integrations */
+export const V5_DEFERRED_RAILS = [
+  "arbitrum-sepolia",
+  "arbitrum",
+  "monad-testnet",
+  "arc",
+  "celo",
+  "stellar",
+  "airwallex",
+  "solana",
+  "stripe",
+  "mandates/ap2",
+] as const
 
 export class ExecutionRailRegistry {
   private readonly rails = new Map<string, ExecutionRail>()

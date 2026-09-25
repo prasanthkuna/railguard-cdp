@@ -5,6 +5,7 @@ import {
   prepareExecutionAttempt,
 } from "./cdpExecutionDriver"
 import { db } from "./db"
+import type { ExecutionAttemptStore } from "./executionAttemptStore"
 
 interface ExecutionAttemptRow {
   id: string
@@ -143,9 +144,7 @@ export async function updateExecutionAttemptAfterBroadcast(input: {
   `
 }
 
-export function createDbExecutionAttemptStore(): import(
-  "./executionAttemptStore",
-).ExecutionAttemptStore {
+export function createDbExecutionAttemptStore(): ExecutionAttemptStore {
   return {
     getOrCreate: getOrCreateExecutionAttempt,
     updateAfterBroadcast: updateExecutionAttemptAfterBroadcast,

@@ -1,12 +1,16 @@
 /** Base Sepolia live RPC settlement verification — no mocks. */
 
-import { http, type Hash, createPublicClient } from "viem"
+import type { Hash } from "viem"
 import { baseSepolia } from "viem/chains"
+import {
+  buildExpectedFromTransfer as buildExpectedForChain,
+  createEvmPublicClient,
+  fetchSettlementFromTx as fetchEvmSettlementFromTx,
+} from "./evm-rpc.js"
 import {
   type ExpectedTransferFacts,
   type SettlementVerificationResult,
   parseErc20TransferLogs,
-  verifyTransferFacts,
 } from "./index.js"
 
 export const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
@@ -14,10 +18,7 @@ export const BASE_SEPOLIA_CHAIN_ID = 84532
 export const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
 
 export function createBaseSepoliaClient(rpcUrl = BASE_SEPOLIA_RPC) {
-  return createPublicClient({
-    chain: baseSepolia,
-    transport: http(rpcUrl),
-  })
+  return createEvmPublicClient(baseSepolia, rpcUrl)
 }
 
 export async function fetchSettlementFromTx(input: {
@@ -26,45 +27,14 @@ export async function fetchSettlementFromTx(input: {
   requiredConfirmations?: number
   rpcUrl?: string
 }): Promise<SettlementVerificationResult & { txHash: string; confirmations: number }> {
-  const client = createBaseSepoliaClient(input.rpcUrl)
-  const requiredConfirmations = input.requiredConfirmations ?? 1
-
-  const receipt = await client.getTransactionReceipt({
-    hash: input.txHash as Hash,
-  })
-  const blockNumber = await client.getBlockNumber()
-  const confirmations = Number(blockNumber - receipt.blockNumber) + 1
-
-  const transfers = parseErc20TransferLogs(
-    receipt.logs.map((log) => ({
-      address: log.address,
-      topics: log.topics as readonly string[],
-      data: log.data,
-    })),
-  )
-
-  if (!input.expected) {
-    if (receipt.status !== "success") {
-      return {
-        status: "REVERTED",
-        reason: "transaction_reverted",
-        txHash: input.txHash,
-        confirmations,
-      }
-    }
-    return { status: "CONFIRMED", txHash: input.txHash, confirmations }
-  }
-
-  const result = verifyTransferFacts({
-    receiptStatus: receipt.status,
-    confirmations,
-    requiredConfirmations,
-    observedChainId: BASE_SEPOLIA_CHAIN_ID,
-    transfers,
+  return fetchEvmSettlementFromTx({
+    chain: baseSepolia,
+    chainId: BASE_SEPOLIA_CHAIN_ID,
+    txHash: input.txHash,
     expected: input.expected,
+    requiredConfirmations: input.requiredConfirmations,
+    rpcUrl: input.rpcUrl,
   })
-
-  return { ...result, txHash: input.txHash, confirmations }
 }
 
 /** Discover a recent USDC transfer on Base Sepolia for read-only evidence (no keys). */
@@ -77,7 +47,7 @@ export async function discoverRecentUsdcTransfer(input?: {
   transfer: ReturnType<typeof parseErc20TransferLogs>[number]
 } | null> {
   const client = createBaseSepoliaClient(input?.rpcUrl)
-  const maxRange = input?.maxBlockRange ?? 2000
+  const maxRange = input?.maxBlockRange ?? 1000
   const lookback = input?.lookbackBlocks ?? 20_000
   const latest = await client.getBlockNumber()
   const start = latest > BigInt(lookback) ? latest - BigInt(lookback) : 0n
@@ -124,13 +94,7 @@ export async function discoverRecentUsdcTransfer(input?: {
 export function buildExpectedFromTransfer(
   transfer: ReturnType<typeof parseErc20TransferLogs>[number],
 ): ExpectedTransferFacts {
-  return {
-    chainId: BASE_SEPOLIA_CHAIN_ID,
-    tokenAddress: transfer.tokenAddress,
-    sender: transfer.from,
-    recipient: transfer.to,
-    amount: transfer.amount,
-  }
+  return buildExpectedForChain(BASE_SEPOLIA_CHAIN_ID, transfer)
 }
 
 export async function generateBaseSepoliaEvidence(input?: {

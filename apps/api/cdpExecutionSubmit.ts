@@ -1,5 +1,6 @@
 import { submitPersistedCdpTransferCore } from "./cdpRecoveryScenario"
 import type { ExecutionAttemptStore } from "./executionAttemptStore"
+import { createDbExecutionAttemptStore } from "./executionAttempts"
 import { executeCdpTransfer } from "./providers"
 
 let defaultExecutionAttemptStore: ExecutionAttemptStore | undefined
@@ -9,9 +10,6 @@ function resolveExecutionAttemptStore(store?: ExecutionAttemptStore): ExecutionA
     return store
   }
   if (!defaultExecutionAttemptStore) {
-    const { createDbExecutionAttemptStore } = require("./executionAttempts") as typeof import(
-      "./executionAttempts",
-    )
     defaultExecutionAttemptStore = createDbExecutionAttemptStore()
   }
   return defaultExecutionAttemptStore

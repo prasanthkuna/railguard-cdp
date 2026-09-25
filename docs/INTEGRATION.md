@@ -25,7 +25,8 @@ bun run dev:api
 # Terminal 2 — CLI
 $env:RAILGUARD_ACCESS_TOKEN = "<token>"
 bun run railguard doctor
-bun run railguard verify
+bun run railguard verify                    # full demo seed flow
+bun run railguard verify <executionId>       # per-execution PASS/FAIL report
 
 # MCP — add docs/mcp-cursor.example.json to Cursor MCP settings
 bun run railguard:mcp
