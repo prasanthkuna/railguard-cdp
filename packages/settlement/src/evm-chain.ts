@@ -17,6 +17,13 @@ function toViemChain(descriptor: ReturnType<typeof getEvmChain>): Chain {
   })
 }
 
+export async function createPublicClientForEvmChain(chainId: string) {
+  const descriptor = getEvmChain(chainId)
+  const chain = toViemChain(descriptor)
+  const { createEvmPublicClient } = await import("./evm-rpc.js")
+  return createEvmPublicClient(chain, descriptor.rpcUrls[0])
+}
+
 export async function verifyEvmChainTx(input: {
   chainId: string
   txHash: string

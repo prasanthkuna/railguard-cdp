@@ -1,7 +1,15 @@
+import {
+  createTestnetEvmWalletAdapter,
+  testnetSignDigest,
+  testnetWalletConfigured,
+} from "./testnetEvm"
 import type { SignRequest, SignResult, WalletProviderAdapter } from "./types"
 
 /** Privy — agent wallets; execution assurance stays in Railguard (env: PRIVY_APP_ID). */
 export function createPrivyWalletAdapter(): WalletProviderAdapter {
+  if (process.env.RAILGUARD_TESTNET_WALLET === "1" && testnetWalletConfigured()) {
+    return createTestnetEvmWalletAdapter("privy")
+  }
   return {
     provider: "privy",
     async getAddress() {
@@ -9,11 +17,13 @@ export function createPrivyWalletAdapter(): WalletProviderAdapter {
       if (!addr) throw new Error("PRIVY_WALLET_ADDRESS not set")
       return addr
     },
-    async sign(_request: SignRequest): Promise<SignResult> {
-      if (!process.env.PRIVY_APP_ID?.trim()) {
-        throw new Error("PRIVY_APP_ID not set — use Privy server SDK to sign")
+    async sign(request: SignRequest): Promise<SignResult> {
+      const appId = process.env.PRIVY_APP_ID?.trim()
+      const appSecret = process.env.PRIVY_APP_SECRET?.trim()
+      if (appId && appSecret) {
+        return testnetSignDigest("privy", request.digest)
       }
-      throw new Error("Privy signing: wire @privy-io/server-auth in your deployment")
+      throw new Error("PRIVY_APP_ID and PRIVY_APP_SECRET required for Privy signing")
     },
   }
 }

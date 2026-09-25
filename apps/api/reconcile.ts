@@ -2,6 +2,7 @@ import { api } from "encore.dev/api"
 import { CronJob } from "encore.dev/cron"
 import { BASE_SEPOLIA_CHAIN, BASE_SEPOLIA_USDC } from "../../packages/cdp/src"
 import type { ExpectedTransferFacts } from "../../packages/settlement/src"
+import { attachBlockAnchorForPaymentIntent } from "./blockAnchor"
 import { db } from "./db"
 import { transitionAfterSettlementVerification } from "./paymentReconciliation"
 import { isReconcileCandidate } from "./paymentState"
@@ -112,6 +113,15 @@ export async function reconcilePaymentIntentRow(
 
   if (transition.shouldRecordSettlement && row.guard_receipt_id) {
     recordPaymentSettlement(row.organization_id, row.guard_receipt_id, row.tx_hash)
+  }
+
+  if (transition.paymentStatus === "confirmed" && row.tx_hash) {
+    await attachBlockAnchorForPaymentIntent({
+      organizationId: row.organization_id,
+      paymentIntentId: row.id,
+      txHash: row.tx_hash,
+      chain: row.chain,
+    }).catch(() => undefined)
   }
 
   if (transition.paymentStatus) {

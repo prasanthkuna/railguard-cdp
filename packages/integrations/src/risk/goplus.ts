@@ -6,12 +6,9 @@ export function createGoPlusRiskProvider(): RiskSignalProvider {
     name: "goplus",
     async evaluate(input: RiskSignalInput): Promise<RiskSignalResult> {
       const appKey = process.env.GOPLUS_APP_KEY?.trim()
-      if (!appKey) {
-        return { provider: "goplus", level: "UNKNOWN", labels: ["provider_not_configured"] }
-      }
       try {
         const url = `https://api.gopluslabs.io/api/v1/address_security/${input.chainId}?contract_addresses=${input.to}`
-        const res = await fetch(url, { headers: { Authorization: appKey } })
+        const res = await fetch(url, appKey ? { headers: { Authorization: appKey } } : undefined)
         if (!res.ok) {
           return { provider: "goplus", level: "UNKNOWN", labels: [`http_${res.status}`] }
         }

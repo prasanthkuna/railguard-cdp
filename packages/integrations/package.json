@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@railguard/kernel": "workspace:*",
-    "@railguard/settlement": "workspace:*"
+    "@railguard/settlement": "workspace:*",
+    "viem": "^2.48.4"
   }
 }

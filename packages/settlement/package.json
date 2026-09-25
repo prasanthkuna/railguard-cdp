@@ -8,6 +8,7 @@
     "./chains": "./src/chains.ts",
     "./evm-chain": "./src/evm-chain.ts",
     "./base-sepolia": "./src/base-sepolia.ts",
-    "./arbitrum-sepolia": "./src/arbitrum-sepolia.ts"
+    "./arbitrum-sepolia": "./src/arbitrum-sepolia.ts",
+    "./stellar-testnet": "./src/stellar-testnet.ts"
   }
 }
