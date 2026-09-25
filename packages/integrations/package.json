@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./assurance": "./src/assuranceMode.ts",
+    "./partners": "./src/partners.ts",
     "./format": "./src/format.ts",
     "./risk": "./src/risk/index.ts",
     "./wallets": "./src/wallets/index.ts",

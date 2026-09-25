@@ -20,11 +20,4 @@ export function createAllGrantRails(): ExecutionRail[] {
   ]
 }
 
-export const INTEGRATION_PARTNERS = {
-  agents: ["mcp", "coinbase-agentkit", "openclaw", "x402"],
-  wallets: ["privy", "turnkey", "safe", "zerodev"],
-  evmChains: listEvmChainIds(),
-  risk: ["blockaid", "hypernative", "goplus", "chainlink-cre"],
-  fiat: ["airwallex"],
-  nonEvm: ["stellar"],
-} as const
+export { INTEGRATION_PARTNERS } from "../partners"
