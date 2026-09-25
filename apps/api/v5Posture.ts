@@ -1,7 +1,29 @@
-import { describeAssuranceMode, resolveAssuranceMode } from "@railguard/integrations/assurance"
-import { INTEGRATION_PARTNERS } from "@railguard/integrations/partners"
 import { APIError, api } from "encore.dev/api"
 import { requireV5Actor } from "./v5Store"
+
+const INTEGRATION_PARTNERS = {
+  agents: ["mcp", "coinbase-agentkit", "openclaw", "x402"],
+  wallets: ["privy", "turnkey", "safe", "zerodev"],
+  evmChains: [
+    "base-sepolia",
+    "arbitrum-sepolia",
+    "monad-testnet",
+    "arc-testnet",
+    "celo-alfajores",
+    "arbitrum",
+    "arc",
+    "celo",
+  ],
+  risk: ["blockaid", "hypernative", "goplus", "chainlink-cre"],
+  fiat: ["airwallex"],
+  nonEvm: ["stellar"],
+} as const
+
+function resolveAssuranceMode(): string {
+  const value = (process.env.RAILGUARD_ASSURANCE_MODE ?? "GUARD").toUpperCase()
+  if (value === "OBSERVE" || value === "GUARD" || value === "ENFORCE") return value
+  return "GUARD"
+}
 
 export interface PostureSummary {
   assuranceMode: string
@@ -54,11 +76,8 @@ export const getV1PostureSummary = api(
     const unknownCount = unknown?.count ?? 0
     const unlimitedApprovals = Math.max(0, (walletCount?.count ?? 0) - (vendorCount?.count ?? 0))
 
-    const mode = resolveAssuranceMode()
-    describeAssuranceMode(mode)
-
     return {
-      assuranceMode: mode,
+      assuranceMode: resolveAssuranceMode(),
       fundsExposedBaseUnits: org.hard_cap_base_units,
       singleTxLimitBaseUnits: org.approval_threshold_base_units,
       dailyLimitBaseUnits: org.hard_cap_base_units,
