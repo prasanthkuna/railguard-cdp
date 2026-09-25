@@ -1,8 +1,8 @@
-import { listEvmChainIds } from "@railguard/settlement/chains"
-import { createSettlementVerifyRail } from "./settlementVerifyRail"
-import { createAirwallexExecutionRail } from "./airwallexRail"
-import { createStellarExecutionRail } from "./stellarRail"
 import type { ExecutionRail } from "@railguard/kernel/executionRail"
+import { listEvmChainIds } from "@railguard/settlement/chains"
+import { createAirwallexExecutionRail } from "./airwallexRail"
+import { createSettlementVerifyRail } from "./settlementVerifyRail"
+import { createStellarExecutionRail } from "./stellarRail"
 
 export { createSettlementVerifyRail, createStellarExecutionRail, createAirwallexExecutionRail }
 
@@ -13,7 +13,11 @@ export function createEvmSettlementRails(): ExecutionRail[] {
 }
 
 export function createAllGrantRails(): ExecutionRail[] {
-  return [...createEvmSettlementRails(), createStellarExecutionRail(), createAirwallexExecutionRail()]
+  return [
+    ...createEvmSettlementRails(),
+    createStellarExecutionRail(),
+    createAirwallexExecutionRail(),
+  ]
 }
 
 export const INTEGRATION_PARTNERS = {

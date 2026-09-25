@@ -4,10 +4,10 @@ export { createTurnkeyWalletAdapter } from "./turnkey"
 export { createSafeWalletAdapter } from "./safe"
 export { createZeroDevWalletAdapter } from "./zerodev"
 
-import type { WalletProviderAdapter } from "./types"
 import { createPrivyWalletAdapter } from "./privy"
 import { createSafeWalletAdapter } from "./safe"
 import { createTurnkeyWalletAdapter } from "./turnkey"
+import type { WalletProviderAdapter } from "./types"
 import { createZeroDevWalletAdapter } from "./zerodev"
 
 export function resolveWalletAdapter(): WalletProviderAdapter | null {

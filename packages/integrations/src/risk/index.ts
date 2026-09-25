@@ -5,7 +5,12 @@ import { createHypernativeRiskProvider } from "./hypernative"
 import type { RiskSignalInput, RiskSignalProvider, RiskSignalResult } from "./types"
 
 export * from "./types"
-export { createBlockaidRiskProvider, createHypernativeRiskProvider, createGoPlusRiskProvider, createChainlinkCreRiskProvider }
+export {
+  createBlockaidRiskProvider,
+  createHypernativeRiskProvider,
+  createGoPlusRiskProvider,
+  createChainlinkCreRiskProvider,
+}
 
 export function createDefaultRiskPanel(): RiskSignalProvider[] {
   return [

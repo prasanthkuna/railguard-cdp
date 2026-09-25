@@ -43,4 +43,3 @@ export async function runLab(args: string[]): Promise<number> {
   })
   return proc.exited
 }
-

@@ -28,6 +28,7 @@
       "name": "@railguard/api",
       "version": "0.1.0",
       "dependencies": {
+        "@railguard/integrations": "workspace:*",
         "@railguard/kernel": "workspace:*",
         "@x402-guard/core": "workspace:*",
         "@x402-guard/middleware": "workspace:*",

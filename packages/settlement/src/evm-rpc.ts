@@ -40,46 +40,45 @@ export async function fetchSettlementFromTx(input: {
   rpcUrl?: string
   rpcUrls?: readonly string[]
 }): Promise<SettlementVerificationResult & { txHash: string; confirmations: number }> {
-  const urls =
-    input.rpcUrls ?? (input.rpcUrl ? [input.rpcUrl] : input.chain.rpcUrls.default.http)
+  const urls = input.rpcUrls ?? (input.rpcUrl ? [input.rpcUrl] : input.chain.rpcUrls.default.http)
   return withRpcFallback(input.chain, urls, async (rpcUrl) => {
     const client = createEvmPublicClient(input.chain, rpcUrl)
     const requiredConfirmations = input.requiredConfirmations ?? 1
 
     const receipt = await client.getTransactionReceipt({
-    hash: input.txHash as Hash,
-  })
-  const blockNumber = await client.getBlockNumber()
-  const confirmations = Number(blockNumber - receipt.blockNumber) + 1
+      hash: input.txHash as Hash,
+    })
+    const blockNumber = await client.getBlockNumber()
+    const confirmations = Number(blockNumber - receipt.blockNumber) + 1
 
-  const transfers = parseErc20TransferLogs(
-    receipt.logs.map((log) => ({
-      address: log.address,
-      topics: log.topics as readonly string[],
-      data: log.data,
-    })),
-  )
+    const transfers = parseErc20TransferLogs(
+      receipt.logs.map((log) => ({
+        address: log.address,
+        topics: log.topics as readonly string[],
+        data: log.data,
+      })),
+    )
 
-  if (!input.expected) {
-    if (receipt.status !== "success") {
-      return {
-        status: "REVERTED",
-        reason: "transaction_reverted",
-        txHash: input.txHash,
-        confirmations,
+    if (!input.expected) {
+      if (receipt.status !== "success") {
+        return {
+          status: "REVERTED",
+          reason: "transaction_reverted",
+          txHash: input.txHash,
+          confirmations,
+        }
       }
+      return { status: "CONFIRMED", txHash: input.txHash, confirmations }
     }
-    return { status: "CONFIRMED", txHash: input.txHash, confirmations }
-  }
 
-  const result = verifyTransferFacts({
-    receiptStatus: receipt.status,
-    confirmations,
-    requiredConfirmations,
-    observedChainId: input.chainId,
-    transfers,
-    expected: input.expected,
-  })
+    const result = verifyTransferFacts({
+      receiptStatus: receipt.status,
+      confirmations,
+      requiredConfirmations,
+      observedChainId: input.chainId,
+      transfers,
+      expected: input.expected,
+    })
 
     return { ...result, txHash: input.txHash, confirmations }
   })

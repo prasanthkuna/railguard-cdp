@@ -1,8 +1,8 @@
+import type { ExpectedTransferFacts } from "@railguard/settlement"
 /**
  * viem/ethers long-tail — wrap public client reads with settlement verification.
  */
 import { verifyEvmChainTx } from "@railguard/settlement/evm-chain"
-import type { ExpectedTransferFacts } from "@railguard/settlement"
 
 export async function guardedVerifyTransfer(input: {
   chainKey: string

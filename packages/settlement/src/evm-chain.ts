@@ -2,11 +2,11 @@
 
 import type { Chain } from "viem"
 import { defineChain } from "viem"
-import type { ExpectedTransferFacts, SettlementVerificationResult } from "./index.js"
+import type { Hash } from "viem"
 import { getEvmChain } from "./chains.js"
 import { buildExpectedFromTransfer, fetchSettlementFromTx } from "./evm-rpc.js"
+import type { ExpectedTransferFacts, SettlementVerificationResult } from "./index.js"
 import { parseErc20TransferLogs } from "./index.js"
-import type { Hash } from "viem"
 
 function toViemChain(descriptor: ReturnType<typeof getEvmChain>): Chain {
   return defineChain({

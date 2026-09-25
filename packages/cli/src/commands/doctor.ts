@@ -36,7 +36,10 @@ export async function runDoctor(env: RailguardEnv): Promise<void> {
     console.log(padLine("Unknown recipients", "(sign in)"))
     console.log(padLine("Unlimited approvals", "(sign in)"))
     console.log(
-      padLine("Duplicate protection", pub.duplicateProtection === "ENABLED" ? "ENABLED" : "MISSING"),
+      padLine(
+        "Duplicate protection",
+        pub.duplicateProtection === "ENABLED" ? "ENABLED" : "MISSING",
+      ),
     )
     console.log(padLine("Reconciliation", "(sign in)"))
     console.log("")
@@ -58,13 +61,13 @@ export async function runDoctor(env: RailguardEnv): Promise<void> {
   )
   console.log(padLine("Unlimited approvals", String(posture.unlimitedApprovals)))
   console.log(
-    padLine("Duplicate protection", posture.duplicateProtection === "ENABLED" ? "ENABLED" : "MISSING"),
+    padLine(
+      "Duplicate protection",
+      posture.duplicateProtection === "ENABLED" ? "ENABLED" : "MISSING",
+    ),
   )
   console.log(
-    padLine(
-      "Reconciliation",
-      posture.reconciliation === "ACTIVE" ? "ACTIVE" : "NEEDS REVIEW",
-    ),
+    padLine("Reconciliation", posture.reconciliation === "ACTIVE" ? "ACTIVE" : "NEEDS REVIEW"),
   )
   console.log("")
   console.log("Estimated blast radius:")

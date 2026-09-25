@@ -11,7 +11,7 @@ describe("arbitrum sepolia settlement facts", () => {
   it("verifies transfer on chain 421614", () => {
     const from = SENDER.toLowerCase().replace("0x", "").padStart(64, "0")
     const to = RECIPIENT.toLowerCase().replace("0x", "").padStart(64, "0")
-    const amount = (1_000_000n).toString(16).padStart(64, "0")
+    const amount = 1_000_000n.toString(16).padStart(64, "0")
     const transfers = parseErc20TransferLogs([
       {
         address: TOKEN,

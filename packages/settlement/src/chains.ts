@@ -25,7 +25,10 @@ export const EVM_CHAINS: Record<string, EvmChainDescriptor> = {
     id: "arbitrum-sepolia",
     name: "Arbitrum Sepolia",
     chainId: 421614,
-    rpcUrls: ["https://sepolia-rollup.arbitrum.io/rpc", "https://arb-sepolia.g.alchemy.com/v2/demo"],
+    rpcUrls: [
+      "https://sepolia-rollup.arbitrum.io/rpc",
+      "https://arb-sepolia.g.alchemy.com/v2/demo",
+    ],
     explorerTxUrl: (h) => `https://sepolia.arbiscan.io/tx/${h}`,
     usdcAddress: "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d",
     cdpExecution: false,

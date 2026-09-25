@@ -3,8 +3,8 @@ import {
   protectRecommendations,
   resolveAssuranceMode,
 } from "@railguard/integrations"
-import type { RailguardEnv } from "../config"
 import { fetchJson } from "../client"
+import type { RailguardEnv } from "../config"
 import { requireToken } from "../config"
 
 export async function runProtect(env: RailguardEnv): Promise<number> {

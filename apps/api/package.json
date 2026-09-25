@@ -11,6 +11,7 @@
     "@x402-guard/middleware": "workspace:*",
     "@x402-guard/policy": "workspace:*",
     "@x402-guard/receipts": "workspace:*",
+    "@railguard/integrations": "workspace:*",
     "@railguard/kernel": "workspace:*"
   },
   "scripts": {

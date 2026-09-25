@@ -151,7 +151,8 @@ export const getV1IntentVerify = api(
     const stored = await getStoredExecutionByIntent(actor.organizationID, params.id)
     const executionId = stored.executionId ?? `exec_${params.id}`
     const full = await getStoredExecution(actor.organizationID, executionId)
-    const evidence = full.evidence ?? (await buildAndStoreEvidence(actor.organizationID, executionId))
+    const evidence =
+      full.evidence ?? (await buildAndStoreEvidence(actor.organizationID, executionId))
     const explain = buildExplainCharge({ ...full, evidence })
     return { intentId: params.id, executionId, evidence, explain }
   },

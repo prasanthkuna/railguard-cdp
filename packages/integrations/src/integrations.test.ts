@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test"
-import { resolveAssuranceMode, describeAssuranceMode } from "./assuranceMode"
-import { createDefaultRiskPanel, worstRiskLevel } from "./risk"
+import { describeAssuranceMode, resolveAssuranceMode } from "./assuranceMode"
 import { INTEGRATION_PARTNERS } from "./rails"
+import { createDefaultRiskPanel, worstRiskLevel } from "./risk"
 
 describe("@railguard/integrations", () => {
   it("resolves assurance modes", () => {
@@ -26,7 +26,7 @@ describe("@railguard/integrations", () => {
 
   it("default mode is GUARD", () => {
     const prev = process.env.RAILGUARD_ASSURANCE_MODE
-    delete process.env.RAILGUARD_ASSURANCE_MODE
+    process.env.RAILGUARD_ASSURANCE_MODE = undefined
     expect(resolveAssuranceMode()).toBe("GUARD")
     if (prev) process.env.RAILGUARD_ASSURANCE_MODE = prev
   })

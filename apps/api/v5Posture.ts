@@ -1,6 +1,9 @@
-import { api, APIError } from "encore.dev/api"
-import { describeAssuranceMode, resolveAssuranceMode } from "../../packages/integrations/src/assuranceMode"
-import { INTEGRATION_PARTNERS } from "../../packages/integrations/src/rails"
+import { APIError, api } from "encore.dev/api"
+import {
+  describeAssuranceMode,
+  resolveAssuranceMode,
+} from "@railguard/integrations/assurance"
+import { INTEGRATION_PARTNERS } from "@railguard/integrations/rails"
 import { requireV5Actor } from "./v5Store"
 
 export interface PostureSummary {

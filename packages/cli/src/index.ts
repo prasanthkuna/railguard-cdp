@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
 import { runInject, runRaceBudget, runVerifyApf } from "./commands/failure"
-import { runProtect } from "./commands/protect"
 import { runDoctor, runLab, runVerify } from "./commands/ops"
+import { runProtect } from "./commands/protect"
 import {
   runAuthorize,
   runEvidence,
@@ -70,7 +70,10 @@ async function main(): Promise<number> {
       case "protect":
         return runProtect(env)
       case "inject":
-        if (!sub) throw new Error("usage: railguard inject <rpc-timeout|duplicate-retry|reorg|signer-timeout>")
+        if (!sub)
+          throw new Error(
+            "usage: railguard inject <rpc-timeout|duplicate-retry|reorg|signer-timeout>",
+          )
         return runInject(sub, positionals.slice(2))
       case "race":
         if (sub !== "budget") throw new Error("usage: railguard race budget [--requests N]")
