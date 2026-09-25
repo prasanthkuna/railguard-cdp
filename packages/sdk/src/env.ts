@@ -3,12 +3,17 @@ export interface RailguardEnv {
   accessToken?: string
 }
 
+function readEnvBaseUrl(): string | undefined {
+  for (const key of ["RAILGUARD_BASE_URL", "NEXT_PUBLIC_API_URL"] as const) {
+    const raw = process.env[key]?.trim()
+    if (!raw || raw === "undefined") continue
+    return raw
+  }
+  return undefined
+}
+
 export function resolveRailguardEnv(overrides?: { baseUrl?: string }): RailguardEnv {
-  const baseUrl =
-    overrides?.baseUrl ??
-    process.env.RAILGUARD_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://localhost:4000"
+  const baseUrl = overrides?.baseUrl ?? readEnvBaseUrl() ?? "http://localhost:4000"
 
   const accessToken = process.env.RAILGUARD_ACCESS_TOKEN?.trim() || undefined
 

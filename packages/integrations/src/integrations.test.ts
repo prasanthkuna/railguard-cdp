@@ -26,8 +26,8 @@ describe("@railguard/integrations", () => {
 
   it("default mode is GUARD", () => {
     const prev = process.env.RAILGUARD_ASSURANCE_MODE
-    process.env.RAILGUARD_ASSURANCE_MODE = undefined
+    Reflect.deleteProperty(process.env, "RAILGUARD_ASSURANCE_MODE")
     expect(resolveAssuranceMode()).toBe("GUARD")
-    if (prev) process.env.RAILGUARD_ASSURANCE_MODE = prev
+    if (prev !== undefined) process.env.RAILGUARD_ASSURANCE_MODE = prev
   })
 })

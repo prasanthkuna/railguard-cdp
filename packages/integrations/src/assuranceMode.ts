@@ -10,7 +10,12 @@ export interface AssuranceModeBehavior {
 }
 
 export function resolveAssuranceMode(raw?: string): AssuranceMode {
-  const value = (raw ?? process.env.RAILGUARD_ASSURANCE_MODE ?? "GUARD").toUpperCase()
+  const fromEnv = process.env.RAILGUARD_ASSURANCE_MODE?.trim()
+  const value = (
+    raw ??
+    (fromEnv && fromEnv !== "undefined" ? fromEnv : undefined) ??
+    "GUARD"
+  ).toUpperCase()
   if (value === "OBSERVE" || value === "GUARD" || value === "ENFORCE") return value
   return "GUARD"
 }
